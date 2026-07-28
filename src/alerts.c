@@ -213,15 +213,6 @@ status_t alertsLoadFromPath(AlertStore *store, const char *path)
     return result;
 }
 
-status_t alertsSave(AlertStore *store)
-{
-    return alertsSaveToPath(store, DEFAULT_ALERTS_DB_PATH);
-}
-
-status_t alertsLoad(AlertStore *store)
-{
-    return alertsLoadFromPath(store, DEFAULT_ALERTS_DB_PATH);
-}
 
 size_t alertsCount(AlertStore *store)
 {

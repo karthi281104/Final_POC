@@ -38,8 +38,6 @@ status_t alertsCheckPrice(AlertStore *store, const char *symbol, double currentP
 
 status_t alertsSaveToPath(AlertStore *store, const char *path);
 status_t alertsLoadFromPath(AlertStore *store, const char *path);
-status_t alertsSave(AlertStore *store);
-status_t alertsLoad(AlertStore *store);
 
 size_t alertsCount(AlertStore *store);
 status_t alertsGetAll(AlertStore *store, Alert *outArray, size_t maxCount, size_t *outCount);

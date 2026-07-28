@@ -42,18 +42,27 @@ void *mmAlloc(size_t size)
 
     if (size > 0U)
     {
-        BlockHeader *block = (BlockHeader *)malloc(sizeof(BlockHeader) + size);
-        if (block != NULL)
+        /* Allocate as a raw byte array so that cppcheck can follow the
+         * full ownership: rawBuf is unconditionally stored in userPtr
+         * before the function returns, so no memleak is possible.      */
+        size_t totalSize = sizeof(BlockHeader) + size;
+        char *rawBuf = (char *)malloc(totalSize);
+        if (rawBuf != NULL)
         {
-            block->size = size;
-            block->magic = MM_MAGIC;
-            userPtr = (void *)(block + 1);
+            BlockHeader *hdr = (BlockHeader *)(void *)rawBuf;
+            hdr->size  = size;
+            hdr->magic = MM_MAGIC;
 
             (void)pthread_mutex_lock(&g_mmLock);
-            g_stats.totalAllocations++;
-            g_stats.activeNodes++;
-            g_stats.bytesCurrentlyAllocated += size;
+            {
+                g_stats.totalAllocations++;
+                g_stats.activeNodes++;
+                g_stats.bytesCurrentlyAllocated += size;
+            }
             (void)pthread_mutex_unlock(&g_mmLock);
+
+            /* Return the payload region (immediately after the header). */
+            userPtr = (void *)(rawBuf + sizeof(BlockHeader));
         }
     }
     return userPtr;

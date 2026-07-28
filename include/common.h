@@ -93,7 +93,6 @@ typedef enum {
 /* Returns STATUS_OK or STATUS_ERR_INVALID_ARG. Always NUL-terminates dst
  * within dstSize (never overflows), unlike raw strcpy/strcat. */
 status_t safe_strcpy(char *dst, size_t dstSize, const char *src);
-status_t safe_strcat(char *dst, size_t dstSize, const char *src);
 
 /* Case-insensitive, bounded compare of two symbol-like strings */
 int safe_strcasecmp(const char *a, const char *b);

@@ -15,8 +15,6 @@ status_t authInit(UserStore *store);
  * not exist, creates it with default admin/user accounts. */
 status_t authLoadUsersFromPath(UserStore *store, const char *path);
 status_t authLoadUsers(UserStore *store);
-status_t authSaveUsersToPath(UserStore *store, const char *path);
-status_t authSaveUsers(UserStore *store);
 
 status_t authCreateDefaultUsers(const char *path);
 

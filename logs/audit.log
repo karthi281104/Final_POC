@@ -131,3 +131,18 @@
 [2026-07-27 22:56:23] Background threads stopped cleanly
 [2026-07-27 22:56:23] Saved per-user cache and alerts for admin
 [2026-07-27 22:56:23] All databases saved to disk
+[2026-07-27 23:14:13] Loaded main DB from data/stock.db (100 stocks)
+[2026-07-27 23:14:13] Background threads started (feed/logger/stats)
+[2026-07-27 23:14:21] LOGIN SUCCESS user=admin role=ADMIN
+[2026-07-27 23:14:21] Background threads stopped cleanly
+[2026-07-27 23:14:21] Loaded per-user cache (1 entries) and alerts (0) for admin
+[2026-07-27 23:14:21] Background threads started (feed/logger/stats)
+[2026-07-27 23:14:31] HEARTBEAT logger thread alive
+[2026-07-27 23:14:41] HEARTBEAT logger thread alive
+[2026-07-27 23:14:51] HEARTBEAT logger thread alive
+[2026-07-27 23:15:01] HEARTBEAT logger thread alive
+[2026-07-27 23:15:11] HEARTBEAT logger thread alive
+[2026-07-27 23:15:18] Saved per-user cache and alerts for admin
+[2026-07-27 23:15:19] Background threads stopped cleanly
+[2026-07-27 23:15:19] Saved per-user cache and alerts for admin
+[2026-07-27 23:15:19] All databases saved to disk

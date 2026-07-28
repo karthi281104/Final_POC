@@ -131,40 +131,6 @@ static const char *roleToString(role_t role)
     return str;
 }
 
-status_t authSaveUsersToPath(UserStore *store, const char *path)
-{
-    status_t result = STATUS_OK;
-    if ((store == NULL) || (path == NULL))
-    {
-        result = STATUS_ERR_INVALID_ARG;
-    }
-    else
-    {
-        FILE *fp = fopen(path, "w");
-        if (fp == NULL)
-        {
-            result = STATUS_ERR_IO;
-        }
-        else
-        {
-            size_t i;
-            for (i = 0U; i < store->count; i++)
-            {
-                (void)fprintf(fp, "%s|%s|%s\n", store->users[i].username,
-                               store->users[i].password,
-                               roleToString(store->users[i].role));
-            }
-            (void)fclose(fp);
-        }
-    }
-    return result;
-}
-
-status_t authSaveUsers(UserStore *store)
-{
-    return authSaveUsersToPath(store, DEFAULT_USERS_PATH);
-}
-
 status_t authLogin(UserStore *store, const char *username, const char *password, User *outUser)
 {
     status_t result = STATUS_ERR_AUTH;

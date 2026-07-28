@@ -5,10 +5,10 @@
 unsigned long mainCacheHash(const char *symbol)
 {
     unsigned long hash = 5381UL;
-    size_t i = 0U;
 
     if (symbol != NULL)
     {
+        size_t i = 0U;
         while (symbol[i] != '\0')
         {
             hash = ((hash << 5) + hash) + (unsigned long)(unsigned char)symbol[i];

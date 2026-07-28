@@ -106,10 +106,12 @@ static inline int clock_gettime(int clk_id, struct timespec *ts)
         ULARGE_INTEGER uli;
         unsigned long long ticks100ns;
         GetSystemTimeAsFileTime(&ft);
-        uli.LowPart = ft.dwLowDateTime;
-        uli.HighPart = ft.dwHighDateTime;
-        ticks100ns = uli.QuadPart - 116444736000000000ULL;
-        ts->tv_sec = (time_t)(ticks100ns / 10000000ULL);
+        /* Use memcpy to copy FILETIME into ULARGE_INTEGER (same layout) so
+         * that static-analysis tools (cppcheck unreadVariable) can see both
+         * fields are consumed via the subsequent QuadPart read. */
+        (void)memcpy(&uli, &ft, sizeof(uli));
+        ticks100ns = (unsigned long long)(uli.QuadPart - 116444736000000000ULL);
+        ts->tv_sec  = (time_t)(ticks100ns / 10000000ULL);
         ts->tv_nsec = (long)((ticks100ns % 10000000ULL) * 100ULL);
     }
     return 0;

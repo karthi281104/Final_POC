@@ -7,7 +7,6 @@
 bool secValidateSymbol(const char *symbol)
 {
     bool valid = true;
-    size_t len;
 
     if (symbol == NULL)
     {
@@ -15,7 +14,7 @@ bool secValidateSymbol(const char *symbol)
     }
     else
     {
-        len = portable_strnlen(symbol, SYMBOL_MAX_LEN + 1U);
+        size_t len = portable_strnlen(symbol, SYMBOL_MAX_LEN + 1U);
         if ((len == 0U) || (len >= SYMBOL_MAX_LEN))
         {
             valid = false;
@@ -49,7 +48,6 @@ bool secValidatePrice(double price)
 bool secValidateUsername(const char *username)
 {
     bool valid = true;
-    size_t len;
 
     if (username == NULL)
     {
@@ -57,7 +55,7 @@ bool secValidateUsername(const char *username)
     }
     else
     {
-        len = portable_strnlen(username, USERNAME_MAX_LEN + 1U);
+        size_t len = portable_strnlen(username, USERNAME_MAX_LEN + 1U);
         if ((len == 0U) || (len >= USERNAME_MAX_LEN))
         {
             valid = false;
@@ -82,7 +80,6 @@ bool secValidateUsername(const char *username)
 bool secValidatePassword(const char *password)
 {
     bool valid = true;
-    size_t len;
     static const size_t MIN_PASSWORD_LEN = 4U;
 
     if (password == NULL)
@@ -91,7 +88,7 @@ bool secValidatePassword(const char *password)
     }
     else
     {
-        len = portable_strnlen(password, PASSWORD_MAX_LEN + 1U);
+        size_t len = portable_strnlen(password, PASSWORD_MAX_LEN + 1U);
         if ((len < MIN_PASSWORD_LEN) || (len >= PASSWORD_MAX_LEN))
         {
             valid = false;
@@ -125,7 +122,6 @@ bool secValidateMenuChoice(int choice, int minChoice, int maxChoice)
 bool secValidateCompanyName(const char *name)
 {
     bool valid = true;
-    size_t len;
 
     if (name == NULL)
     {
@@ -133,7 +129,7 @@ bool secValidateCompanyName(const char *name)
     }
     else
     {
-        len = portable_strnlen(name, NAME_MAX_LEN + 1U);
+        size_t len = portable_strnlen(name, NAME_MAX_LEN + 1U);
         if ((len == 0U) || (len >= NAME_MAX_LEN))
         {
             valid = false;

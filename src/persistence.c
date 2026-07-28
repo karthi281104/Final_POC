@@ -297,16 +297,6 @@ status_t loadMainDb(MainCache *cache)
     return loadMainDbFromPath(cache, DEFAULT_STOCK_DB_PATH);
 }
 
-status_t saveCacheDb(SearchCache *sc)
-{
-    return saveCacheToPath(sc, DEFAULT_CACHE_DB_PATH);
-}
-
-status_t loadCacheDb(SearchCache *sc)
-{
-    return loadCacheFromPath(sc, DEFAULT_CACHE_DB_PATH);
-}
-
 status_t persistenceSeedMainDb(MainCache *cache)
 {
     status_t result = STATUS_OK;

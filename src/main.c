@@ -322,9 +322,6 @@ static void actionViewAllStocks(AppContext *ctx)
 static void actionCreateAlert(AppContext *ctx, const char *owner)
 {
     char symbol[SYMBOL_MAX_LEN];
-    double threshold;
-    int typeChoice;
-    alert_type_t type;
     status_t r;
 
     readLine("Symbol for alert: ", symbol, sizeof(symbol));
@@ -334,9 +331,9 @@ static void actionCreateAlert(AppContext *ctx, const char *owner)
     }
     else
     {
-        threshold = readDouble("Threshold price: ");
-        typeChoice = readIntChoice("Alert type (1 = ABOVE, 2 = BELOW): ");
-        type = (typeChoice == 2) ? ALERT_BELOW : ALERT_ABOVE;
+        double threshold = readDouble("Threshold price: ");
+        int typeChoice = readIntChoice("Alert type (1 = ABOVE, 2 = BELOW): ");
+        alert_type_t type = (typeChoice == 2) ? ALERT_BELOW : ALERT_ABOVE;
 
         if (!secValidatePrice(threshold))
         {
@@ -465,11 +462,11 @@ static void actionViewStats(AppContext *ctx)
 
 static void testerSubmenu(void)
 {
-    int choice;
     bool exitSubmenu = false;
 
     while (!exitSubmenu)
     {
+        int choice;
         (void)printf("\n===== TESTER MODULE =====\n");
         (void)printf("1. Unit Testing\n");
         (void)printf("2. Integration Testing\n");
@@ -511,11 +508,11 @@ static void testerSubmenu(void)
 
 static void adminMenu(AppContext *ctx)
 {
-    int choice;
     bool loggedOut = false;
 
     while (!loggedOut)
     {
+        int choice;
         (void)printf("\n===== ADMIN MENU (%s) =====\n", ctx->currentUser.username);
         (void)printf(" 1. Search Stock\n");
         (void)printf(" 2. View My Cache (last %u searched)\n", (unsigned)SEARCH_CACHE_CAPACITY);
@@ -570,11 +567,11 @@ static void adminMenu(AppContext *ctx)
 
 static void userMenu(AppContext *ctx)
 {
-    int choice;
     bool loggedOut = false;
 
     while (!loggedOut)
     {
+        int choice;
         (void)printf("\n===== USER MENU (%s) =====\n", ctx->currentUser.username);
         (void)printf("1. Search Stock\n");
         (void)printf("2. View My Cache (last %u searched)\n", (unsigned)SEARCH_CACHE_CAPACITY);
@@ -615,11 +612,11 @@ static void userMenu(AppContext *ctx)
  * separation, distinct from both ADMIN and USER. */
 static void testerOnlyMenu(AppContext *ctx)
 {
-    int choice;
     bool loggedOut = false;
 
     while (!loggedOut)
     {
+        int choice;
         (void)printf("\n===== TESTER ACCOUNT MENU (%s) =====\n", ctx->currentUser.username);
         (void)printf("1. Open Tester Module (run self-tests)\n");
         (void)printf("0. Logout\n");

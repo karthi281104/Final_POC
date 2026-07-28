@@ -26,7 +26,7 @@ status_t safe_strcpy(char *dst, size_t dstSize, const char *src)
     else
     {
         size_t i = 0U;
-        while ((src[i] != '\0') && (i < (dstSize - 1U)))
+        while ((i < (dstSize - 1U)) && (src[i] != '\0'))
         {
             dst[i] = src[i];
             i++;
@@ -36,40 +36,9 @@ status_t safe_strcpy(char *dst, size_t dstSize, const char *src)
     return result;
 }
 
-status_t safe_strcat(char *dst, size_t dstSize, const char *src)
-{
-    status_t result = STATUS_OK;
-
-    if ((dst == NULL) || (src == NULL) || (dstSize == 0U))
-    {
-        result = STATUS_ERR_INVALID_ARG;
-    }
-    else
-    {
-        size_t dstLen = portable_strnlen(dst, dstSize);
-        if (dstLen >= dstSize)
-        {
-            result = STATUS_ERR_INVALID_ARG;
-        }
-        else
-        {
-            size_t remaining = dstSize - dstLen;
-            size_t i = 0U;
-            while ((src[i] != '\0') && (i < (remaining - 1U)))
-            {
-                dst[dstLen + i] = src[i];
-                i++;
-            }
-            dst[dstLen + i] = '\0';
-        }
-    }
-    return result;
-}
-
 int safe_strcasecmp(const char *a, const char *b)
 {
     int result = 0;
-    size_t i = 0U;
 
     if ((a == NULL) || (b == NULL))
     {
@@ -77,6 +46,7 @@ int safe_strcasecmp(const char *a, const char *b)
     }
     else
     {
+        size_t i = 0U;
         for (;;)
         {
             unsigned char ca = (unsigned char)tolower((unsigned char)a[i]);
