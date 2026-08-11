@@ -25,6 +25,13 @@ typedef struct {
     unsigned int feedIntervalSeconds;
     unsigned int heartbeatIntervalSeconds;
     unsigned int statsIntervalSeconds;
+    
+    /* Track which threads were successfully started so joins are safe
+     * even if tmStartAll partially fails. Values: 0 = not started,
+     * 1 = started. */
+    int feedStarted;
+    int loggerStarted;
+    int statsStarted;
 } ThreadManager;
 
 status_t tmInit(ThreadManager *tm, MainCache *mainDb, SearchCache *searchDb,

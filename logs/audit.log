@@ -146,3 +146,141 @@
 [2026-07-27 23:15:19] Background threads stopped cleanly
 [2026-07-27 23:15:19] Saved per-user cache and alerts for admin
 [2026-07-27 23:15:19] All databases saved to disk
+[2026-08-11 19:51:33] Loaded main DB from data/stock.db (100 stocks)
+[2026-08-11 19:51:33] Background threads started (feed/logger/stats)
+[2026-08-11 19:51:43] HEARTBEAT logger thread alive
+[2026-08-11 19:51:50] LOGIN SUCCESS user=admin role=ADMIN
+[2026-08-11 19:51:50] Background threads stopped cleanly
+[2026-08-11 19:51:50] Loaded per-user cache (2 entries) and alerts (0) for admin
+[2026-08-11 19:51:50] Background threads started (feed/logger/stats)
+[2026-08-11 19:52:00] HEARTBEAT logger thread alive
+[2026-08-11 19:52:10] HEARTBEAT logger thread alive
+[2026-08-11 19:52:20] HEARTBEAT logger thread alive
+[2026-08-11 19:52:30] HEARTBEAT logger thread alive
+[2026-08-11 19:52:40] HEARTBEAT logger thread alive
+[2026-08-11 19:52:48] Admin added new stock tcs (hcl) at 500.00
+[2026-08-11 19:52:50] HEARTBEAT logger thread alive
+[2026-08-11 19:53:00] HEARTBEAT logger thread alive
+[2026-08-11 19:53:10] HEARTBEAT logger thread alive
+[2026-08-11 19:53:20] HEARTBEAT logger thread alive
+[2026-08-11 19:53:30] HEARTBEAT logger thread alive
+[2026-08-11 19:53:40] HEARTBEAT logger thread alive
+[2026-08-11 19:53:50] HEARTBEAT logger thread alive
+[2026-08-11 19:54:00] HEARTBEAT logger thread alive
+[2026-08-11 19:54:10] HEARTBEAT logger thread alive
+[2026-08-11 19:54:20] HEARTBEAT logger thread alive
+[2026-08-11 19:54:30] HEARTBEAT logger thread alive
+[2026-08-11 19:54:40] HEARTBEAT logger thread alive
+[2026-08-11 19:54:50] HEARTBEAT logger thread alive
+[2026-08-11 19:55:00] HEARTBEAT logger thread alive
+[2026-08-11 20:08:24] Loaded main DB from data/stock.db (100 stocks)
+[2026-08-11 20:08:24] Background threads started (feed/logger/stats)
+[2026-08-11 20:08:24] LOGIN FAILED user=
+[2026-08-11 20:08:24] Background threads stopped cleanly
+[2026-08-11 20:08:24] All databases saved to disk
+[2026-08-11 20:34:24] Loaded main DB from data/stock.db (100 stocks)
+[2026-08-11 20:34:24] Background threads started (feed/logger/stats)
+[2026-08-11 20:34:24] LOGIN FAILED user=
+[2026-08-11 20:34:24] Background threads stopped cleanly
+[2026-08-11 20:34:24] All databases saved to disk
+[2026-08-11 20:35:08] Loaded main DB from data/stock.db (100 stocks)
+[2026-08-11 20:35:08] Background threads started (feed/logger/stats)
+[2026-08-11 20:35:16] LOGIN SUCCESS user=admin role=ADMIN
+[2026-08-11 20:35:16] Background threads stopped cleanly
+[2026-08-11 20:35:16] Loaded per-user cache (2 entries) and alerts (0) for admin
+[2026-08-11 20:35:16] Background threads started (feed/logger/stats)
+[2026-08-11 20:35:26] HEARTBEAT logger thread alive
+[2026-08-11 20:35:36] HEARTBEAT logger thread alive
+[2026-08-11 20:35:46] HEARTBEAT logger thread alive
+[2026-08-11 20:35:56] HEARTBEAT logger thread alive
+[2026-08-11 20:36:06] HEARTBEAT logger thread alive
+[2026-08-11 20:36:09] Admin added new stock tcs (hcl) at 500.00
+[2026-08-11 20:36:16] HEARTBEAT logger thread alive
+[2026-08-11 20:36:26] HEARTBEAT logger thread alive
+[2026-08-11 20:36:36] HEARTBEAT logger thread alive
+[2026-08-11 20:36:36] Saved per-user cache and alerts for admin
+[2026-08-11 20:36:37] Background threads stopped cleanly
+[2026-08-11 20:36:37] Saved per-user cache and alerts for admin
+[2026-08-11 20:36:37] All databases saved to disk
+[2026-08-11 20:36:39] Loaded main DB from data/stock.db (101 stocks)
+[2026-08-11 20:36:39] Background threads started (feed/logger/stats)
+[2026-08-11 20:36:43] LOGIN FAILED user=admin
+[2026-08-11 20:36:44] Background threads stopped cleanly
+[2026-08-11 20:36:44] All databases saved to disk
+[2026-08-11 20:36:46] Loaded main DB from data/stock.db (101 stocks)
+[2026-08-11 20:36:46] Background threads started (feed/logger/stats)
+[2026-08-11 20:36:51] LOGIN SUCCESS user=admin role=ADMIN
+[2026-08-11 20:36:51] Background threads stopped cleanly
+[2026-08-11 20:36:51] Loaded per-user cache (2 entries) and alerts (0) for admin
+[2026-08-11 20:36:51] Background threads started (feed/logger/stats)
+[2026-08-11 20:37:01] HEARTBEAT logger thread alive
+[2026-08-11 20:37:11] HEARTBEAT logger thread alive
+[2026-08-11 20:37:21] HEARTBEAT logger thread alive
+[2026-08-11 20:37:29] Saved per-user cache and alerts for admin
+[2026-08-11 20:37:29] All databases saved to disk
+[2026-08-11 20:37:32] HEARTBEAT logger thread alive
+[2026-08-11 20:37:36] Admin deleted stock tcs
+[2026-08-11 20:37:42] HEARTBEAT logger thread alive
+[2026-08-11 20:37:51] Saved per-user cache and alerts for admin
+[2026-08-11 20:37:52] Background threads stopped cleanly
+[2026-08-11 20:37:52] Saved per-user cache and alerts for admin
+[2026-08-11 20:37:52] All databases saved to disk
+[2026-08-11 20:37:53] Loaded main DB from data/stock.db (100 stocks)
+[2026-08-11 20:37:53] Background threads started (feed/logger/stats)
+[2026-08-11 20:38:03] HEARTBEAT logger thread alive
+[2026-08-11 20:38:12] LOGIN SUCCESS user=tester role=TESTER
+[2026-08-11 20:38:12] Background threads stopped cleanly
+[2026-08-11 20:38:12] Loaded per-user cache (0 entries) and alerts (0) for tester
+[2026-08-11 20:38:12] Background threads started (feed/logger/stats)
+[2026-08-11 20:38:22] HEARTBEAT logger thread alive
+[2026-08-11 20:38:32] HEARTBEAT logger thread alive
+[2026-08-11 20:38:42] HEARTBEAT logger thread alive
+[2026-08-11 20:38:52] HEARTBEAT logger thread alive
+[2026-08-11 20:39:02] HEARTBEAT logger thread alive
+[2026-08-11 20:39:12] HEARTBEAT logger thread alive
+[2026-08-11 20:39:22] HEARTBEAT logger thread alive
+[2026-08-11 20:39:32] HEARTBEAT logger thread alive
+[2026-08-11 20:39:42] HEARTBEAT logger thread alive
+[2026-08-11 20:39:52] HEARTBEAT logger thread alive
+[2026-08-11 20:40:02] HEARTBEAT logger thread alive
+[2026-08-11 20:40:12] HEARTBEAT logger thread alive
+[2026-08-11 20:40:14] Saved per-user cache and alerts for tester
+[2026-08-11 20:40:15] Background threads stopped cleanly
+[2026-08-11 20:40:15] Saved per-user cache and alerts for tester
+[2026-08-11 20:40:15] All databases saved to disk
+[2026-08-11 20:40:17] Loaded main DB from data/stock.db (100 stocks)
+[2026-08-11 20:40:17] Background threads started (feed/logger/stats)
+[2026-08-11 20:40:23] LOGIN SUCCESS user=user role=USER
+[2026-08-11 20:40:23] Background threads stopped cleanly
+[2026-08-11 20:40:23] Loaded per-user cache (1 entries) and alerts (0) for user
+[2026-08-11 20:40:23] Background threads started (feed/logger/stats)
+[2026-08-11 20:40:33] HEARTBEAT logger thread alive
+[2026-08-11 20:40:43] HEARTBEAT logger thread alive
+[2026-08-11 20:40:48] Saved per-user cache and alerts for user
+[2026-08-11 20:40:49] Background threads stopped cleanly
+[2026-08-11 20:40:49] Saved per-user cache and alerts for user
+[2026-08-11 20:40:49] All databases saved to disk
+[2026-08-11 20:40:50] Loaded main DB from data/stock.db (100 stocks)
+[2026-08-11 20:40:50] Background threads started (feed/logger/stats)
+[2026-08-11 20:40:54] LOGIN SUCCESS user=admin role=ADMIN
+[2026-08-11 20:40:54] Background threads stopped cleanly
+[2026-08-11 20:40:54] Loaded per-user cache (2 entries) and alerts (0) for admin
+[2026-08-11 20:40:54] Background threads started (feed/logger/stats)
+[2026-08-11 20:41:04] HEARTBEAT logger thread alive
+[2026-08-11 20:41:07] Admin added new stock tcs (hcl) at 400.00
+[2026-08-11 20:41:10] Saved per-user cache and alerts for admin
+[2026-08-11 20:41:14] HEARTBEAT logger thread alive
+[2026-08-11 20:41:23] LOGIN SUCCESS user=user role=USER
+[2026-08-11 20:41:23] Background threads stopped cleanly
+[2026-08-11 20:41:23] Loaded per-user cache (1 entries) and alerts (0) for user
+[2026-08-11 20:41:23] Background threads started (feed/logger/stats)
+[2026-08-11 20:41:33] HEARTBEAT logger thread alive
+[2026-08-11 20:41:43] HEARTBEAT logger thread alive
+[2026-08-11 20:41:53] HEARTBEAT logger thread alive
+[2026-08-11 20:42:03] HEARTBEAT logger thread alive
+[2026-08-11 20:42:08] Alert created by user: tcs BELOW 500.00
+[2026-08-11 20:42:13] HEARTBEAT logger thread alive
+[2026-08-11 20:42:23] HEARTBEAT logger thread alive
+[2026-08-11 20:42:33] HEARTBEAT logger thread alive
+[2026-08-11 20:42:43] HEARTBEAT logger thread alive
+[2026-08-11 20:42:53] HEARTBEAT logger thread alive

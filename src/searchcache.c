@@ -155,6 +155,75 @@ status_t searchCacheTouch(SearchCache *sc, const Stock *stock)
     return result;
 }
 
+    status_t searchCacheTryTouch(SearchCache *sc, const Stock *stock)
+    {
+        status_t result = STATUS_OK;
+
+        if ((sc == NULL) || (stock == NULL))
+        {
+            result = STATUS_ERR_INVALID_ARG;
+        }
+        else
+        {
+            if (pthread_mutex_trylock(&sc->lock) != 0)
+            {
+                result = STATUS_ERR_BUSY;
+            }
+            else
+            {
+                /* reuse existing logic but without reallocating locks */
+                SearchCacheNode *node = sc->head;
+                SearchCacheNode *existing = NULL;
+
+                while (node != NULL)
+                {
+                    if (safe_strcasecmp(node->data.symbol, stock->symbol) == 0)
+                    {
+                        existing = node;
+                        break;
+                    }
+                    node = node->next;
+                }
+
+                if (existing != NULL)
+                {
+                    existing->data = *stock;
+                    detachNode(sc, existing);
+                    pushFront(sc, existing);
+                }
+                else
+                {
+                    if (sc->count >= SEARCH_CACHE_CAPACITY)
+                    {
+                        SearchCacheNode *lru = sc->tail;
+                        if (lru != NULL)
+                        {
+                            detachNode(sc, lru);
+                            mmFree(lru);
+                            sc->count--;
+                        }
+                    }
+
+                    SearchCacheNode *newNode = (SearchCacheNode *)mmAlloc(sizeof(SearchCacheNode));
+                    if (newNode == NULL)
+                    {
+                        result = STATUS_ERR_MEMORY;
+                    }
+                    else
+                    {
+                        newNode->data = *stock;
+                        newNode->prev = NULL;
+                        newNode->next = NULL;
+                        pushFront(sc, newNode);
+                        sc->count++;
+                    }
+                }
+                (void)pthread_mutex_unlock(&sc->lock);
+            }
+        }
+        return result;
+    }
+
 status_t searchCacheSearch(SearchCache *sc, const char *symbol, Stock *outStock)
 {
     status_t result = STATUS_ERR_NOT_FOUND;
@@ -203,6 +272,72 @@ status_t searchCacheUpdatePrice(SearchCache *sc, const char *symbol, double newP
                 {
                     node->data.price = newPrice;
                     node->data.lastUpdated = time(NULL);
+                    result = STATUS_OK;
+                    break;
+                }
+                node = node->next;
+            }
+        }
+        (void)pthread_mutex_unlock(&sc->lock);
+    }
+    return result;
+}
+
+    status_t searchCacheUpdatePriceTry(SearchCache *sc, const char *symbol, double newPrice)
+    {
+        status_t result = STATUS_ERR_NOT_FOUND;
+
+        if ((sc == NULL) || (symbol == NULL))
+        {
+            result = STATUS_ERR_INVALID_ARG;
+        }
+        else
+        {
+            if (pthread_mutex_trylock(&sc->lock) != 0)
+            {
+                result = STATUS_ERR_BUSY;
+            }
+            else
+            {
+                SearchCacheNode *node = sc->head;
+                while (node != NULL)
+                {
+                    if (safe_strcasecmp(node->data.symbol, symbol) == 0)
+                    {
+                        node->data.price = newPrice;
+                        node->data.lastUpdated = time(NULL);
+                        result = STATUS_OK;
+                        break;
+                    }
+                    node = node->next;
+                }
+                (void)pthread_mutex_unlock(&sc->lock);
+            }
+        }
+        return result;
+    }
+
+status_t searchCacheDelete(SearchCache *sc, const char *symbol)
+{
+    status_t result = STATUS_ERR_NOT_FOUND;
+
+    if ((sc == NULL) || (symbol == NULL))
+    {
+        result = STATUS_ERR_INVALID_ARG;
+    }
+    else
+    {
+        (void)pthread_mutex_lock(&sc->lock);
+        {
+            SearchCacheNode *node = sc->head;
+            while (node != NULL)
+            {
+                if (safe_strcasecmp(node->data.symbol, symbol) == 0)
+                {
+                    /* detach and free this node */
+                    detachNode(sc, node);
+                    mmFree(node);
+                    sc->count--;
                     result = STATUS_OK;
                     break;
                 }

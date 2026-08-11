@@ -88,7 +88,9 @@ status_t saveMainDbToPath(MainCache *cache, const char *path)
     }
     else
     {
-        FILE *fp = fopen(path, "w");
+        char tmpPath[PATH_MAX_LEN];
+        (void)snprintf(tmpPath, sizeof(tmpPath), "%s.tmp", path);
+        FILE *fp = fopen(tmpPath, "w");
         if (fp == NULL)
         {
             result = STATUS_ERR_IO;
@@ -116,7 +118,18 @@ status_t saveMainDbToPath(MainCache *cache, const char *path)
             {
                 result = snapResult;
             }
+            (void)fflush(fp);
+#if defined(_WIN32) || defined(_WIN64)
+            /* On Windows, ensure file is closed before rename. */
+#endif
             (void)fclose(fp);
+
+            /* Atomically replace target by removing it first then renaming. */
+            (void)remove(path);
+            if (rename(tmpPath, path) != 0)
+            {
+                result = STATUS_ERR_IO;
+            }
         }
     }
     return result;
@@ -185,7 +198,9 @@ status_t saveCacheToPath(SearchCache *sc, const char *path)
     }
     else
     {
-        FILE *fp = fopen(path, "w");
+        char tmpPath[PATH_MAX_LEN];
+        (void)snprintf(tmpPath, sizeof(tmpPath), "%s.tmp", path);
+        FILE *fp = fopen(tmpPath, "w");
         if (fp == NULL)
         {
             result = STATUS_ERR_IO;
@@ -215,7 +230,16 @@ status_t saveCacheToPath(SearchCache *sc, const char *path)
             {
                 result = snapResult;
             }
+            (void)fflush(fp);
+#if defined(_WIN32) || defined(_WIN64)
+            /* Ensure closed before rename on Windows. */
+#endif
             (void)fclose(fp);
+            (void)remove(path);
+            if (rename(tmpPath, path) != 0)
+            {
+                result = STATUS_ERR_IO;
+            }
         }
     }
     return result;

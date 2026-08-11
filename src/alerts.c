@@ -81,6 +81,9 @@ status_t alertsCheckPrice(AlertStore *store, const char *symbol, double currentP
     }
     else
     {
+        size_t triggered_indices[MAX_ALERTS];
+        size_t trigger_count = 0U;
+
         (void)pthread_mutex_lock(&store->lock);
         {
             size_t i;
@@ -98,24 +101,39 @@ status_t alertsCheckPrice(AlertStore *store, const char *symbol, double currentP
                     {
                         fires = true;
                     }
-                    else
-                    {
-                        fires = false;
-                    }
 
                     if (fires)
                     {
                         a->triggered = true;
                         triggered++;
-                        (void)loggerLog(LOG_HISTORY,
-                            "ALERT TRIGGERED symbol=%s type=%s threshold=%.4f price=%.4f owner=%s",
-                            a->symbol, (a->type == ALERT_ABOVE) ? "ABOVE" : "BELOW",
-                            a->threshold, currentPrice, a->owner);
+                        if (trigger_count < MAX_ALERTS)
+                        {
+                            triggered_indices[trigger_count++] = i;
+                        }
                     }
                 }
             }
         }
         (void)pthread_mutex_unlock(&store->lock);
+
+        /* Perform logging for triggered alerts outside the lock to avoid
+         * holding the alert store mutex across I/O. */
+        {
+            size_t j;
+            for (j = 0U; j < trigger_count; j++)
+            {
+                Alert a_copy;
+                size_t idx = triggered_indices[j];
+                (void)pthread_mutex_lock(&store->lock);
+                a_copy = store->items[idx];
+                (void)pthread_mutex_unlock(&store->lock);
+
+                (void)loggerLog(LOG_HISTORY,
+                    "ALERT TRIGGERED symbol=%s type=%s threshold=%.4f price=%.4f owner=%s",
+                    a_copy.symbol, (a_copy.type == ALERT_ABOVE) ? "ABOVE" : "BELOW",
+                    a_copy.threshold, currentPrice, a_copy.owner);
+            }
+        }
     }
 
     if (outTriggeredCount != NULL)

@@ -55,7 +55,8 @@ typedef enum {
     STATUS_ERR_AUTH = 7,
     STATUS_ERR_PERMISSION = 8,
     STATUS_ERR_LOCK = 9,
-    STATUS_ERR_UNKNOWN = 10
+    STATUS_ERR_BUSY = 10,
+    STATUS_ERR_UNKNOWN = 11
 } status_t;
 
 /* ===================== Roles ============================================ */

@@ -38,9 +38,20 @@ status_t searchCacheSearch(SearchCache *sc, const char *symbol, Stock *outStock)
 /* If the symbol is present, update its price (used to keep cache in
  * sync with the main DB per the two-database sync rule). */
 status_t searchCacheUpdatePrice(SearchCache *sc, const char *symbol, double newPrice);
+/* Non-blocking variants: attempt the operation and return STATUS_ERR_BUSY
+ * if the cache lock cannot be acquired immediately. These are useful in
+ * hot paths to avoid deadlocks or long waits when another thread holds
+ * the cache lock. */
+status_t searchCacheTryTouch(SearchCache *sc, const Stock *stock);
+status_t searchCacheUpdatePriceTry(SearchCache *sc, const char *symbol, double newPrice);
 
 bool   searchCacheContains(SearchCache *sc, const char *symbol);
 size_t searchCacheCount(SearchCache *sc);
+
+/* Remove a symbol from the search cache if present. Returns STATUS_OK
+ * if removed, STATUS_ERR_NOT_FOUND if not present, or error codes on
+ * invalid args. */
+status_t searchCacheDelete(SearchCache *sc, const char *symbol);
 
 /* Snapshot in MRU-to-LRU order into a heap array (mmAlloc'd). Caller
  * must mmFree(*outArray). */

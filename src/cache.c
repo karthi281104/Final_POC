@@ -1,6 +1,7 @@
 #include "cache.h"
 #include "memory.h"
 #include <string.h>
+#include <ctype.h>
 
 unsigned long mainCacheHash(const char *symbol)
 {
@@ -11,7 +12,11 @@ unsigned long mainCacheHash(const char *symbol)
         size_t i = 0U;
         while (symbol[i] != '\0')
         {
-            hash = ((hash << 5) + hash) + (unsigned long)(unsigned char)symbol[i];
+            /* Hash in a case-insensitive manner to match lookups that use
+             * case-insensitive compares elsewhere in the codebase. */
+            unsigned char c = (unsigned char)symbol[i];
+            unsigned char lc = (unsigned char)tolower(c);
+            hash = ((hash << 5) + hash) + (unsigned long)lc;
             i++;
         }
     }

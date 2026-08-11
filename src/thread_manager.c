@@ -113,6 +113,9 @@ status_t tmInit(ThreadManager *tm, MainCache *mainDb, SearchCache *searchDb,
         tm->feedIntervalSeconds = DEFAULT_FEED_INTERVAL_SEC;
         tm->heartbeatIntervalSeconds = DEFAULT_HEARTBEAT_INTERVAL_SEC;
         tm->statsIntervalSeconds = DEFAULT_STATS_INTERVAL_SEC;
+        tm->feedStarted = 0;
+        tm->loggerStarted = 0;
+        tm->statsStarted = 0;
 
         if (pthread_mutex_init(&tm->stateLock, NULL) != 0)
         {
@@ -142,23 +145,62 @@ status_t tmStartAll(ThreadManager *tm)
     {
         (void)pthread_mutex_lock(&tm->stateLock);
         tm->running = 1;
+        tm->feedStarted = 0;
+        tm->loggerStarted = 0;
+        tm->statsStarted = 0;
         (void)pthread_mutex_unlock(&tm->stateLock);
 
+        /* Create feed thread */
         if (pthread_create(&tm->feedThread, NULL, feedThreadFunc, tm) != 0)
-        {
-            result = STATUS_ERR_UNKNOWN;
-        }
-        else if (pthread_create(&tm->loggerThread, NULL, loggerThreadFunc, tm) != 0)
-        {
-            result = STATUS_ERR_UNKNOWN;
-        }
-        else if (pthread_create(&tm->statsThread, NULL, statsThreadFunc, tm) != 0)
         {
             result = STATUS_ERR_UNKNOWN;
         }
         else
         {
+            tm->feedStarted = 1;
+        }
+
+        /* Create logger thread */
+        if (result == STATUS_OK)
+        {
+            if (pthread_create(&tm->loggerThread, NULL, loggerThreadFunc, tm) != 0)
+            {
+                result = STATUS_ERR_UNKNOWN;
+            }
+            else
+            {
+                tm->loggerStarted = 1;
+            }
+        }
+
+        /* Create stats thread */
+        if (result == STATUS_OK)
+        {
+            if (pthread_create(&tm->statsThread, NULL, statsThreadFunc, tm) != 0)
+            {
+                result = STATUS_ERR_UNKNOWN;
+            }
+            else
+            {
+                tm->statsStarted = 1;
+            }
+        }
+
+        if (result == STATUS_OK)
+        {
             (void)loggerLog(LOG_AUDIT, "Background threads started (feed/logger/stats)");
+        }
+        else
+        {
+            /* Partial failure: ensure any started threads are signalled to stop and joined. */
+            (void)pthread_mutex_lock(&tm->stateLock);
+            tm->running = 0;
+            (void)pthread_cond_broadcast(&tm->stateCond);
+            (void)pthread_mutex_unlock(&tm->stateLock);
+
+            if (tm->feedStarted)  { (void)pthread_join(tm->feedThread, NULL); tm->feedStarted = 0; }
+            if (tm->loggerStarted){ (void)pthread_join(tm->loggerThread, NULL); tm->loggerStarted = 0; }
+            if (tm->statsStarted) { (void)pthread_join(tm->statsThread, NULL); tm->statsStarted = 0; }
         }
     }
     return result;
@@ -179,9 +221,21 @@ status_t tmStopAll(ThreadManager *tm)
         (void)pthread_cond_broadcast(&tm->stateCond);
         (void)pthread_mutex_unlock(&tm->stateLock);
 
-        (void)pthread_join(tm->feedThread, NULL);
-        (void)pthread_join(tm->loggerThread, NULL);
-        (void)pthread_join(tm->statsThread, NULL);
+        if (tm->feedStarted)
+        {
+            (void)pthread_join(tm->feedThread, NULL);
+            tm->feedStarted = 0;
+        }
+        if (tm->loggerStarted)
+        {
+            (void)pthread_join(tm->loggerThread, NULL);
+            tm->loggerStarted = 0;
+        }
+        if (tm->statsStarted)
+        {
+            (void)pthread_join(tm->statsThread, NULL);
+            tm->statsStarted = 0;
+        }
 
         (void)loggerLog(LOG_AUDIT, "Background threads stopped cleanly");
     }

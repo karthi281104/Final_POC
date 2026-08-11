@@ -46,6 +46,7 @@ status_t loggerInit(void)
 status_t loggerShutdown(void)
 {
     g_ready = 0;
+    (void)pthread_mutex_destroy(&g_logLock);
     return STATUS_OK;
 }
 

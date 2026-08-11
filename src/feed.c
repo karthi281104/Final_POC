@@ -34,7 +34,15 @@ status_t feedApplyPriceUpdate(MainCache *mainDb, SearchCache *searchDb, AlertSto
              * while the symbol is cached. */
             if (searchCacheContains(searchDb, symbol))
             {
-                (void)searchCacheUpdatePrice(searchDb, symbol, newPrice);
+                /* Attempt a non-blocking update of the search cache to avoid
+                 * deadlocks: if another thread currently holds the cache
+                 * lock, skip the cache update (it will be eventually
+                 * consistent on next search/touch). */
+                status_t u = searchCacheUpdatePriceTry(searchDb, symbol, newPrice);
+                if (u == STATUS_ERR_BUSY)
+                {
+                    /* best-effort: skip updating cache to avoid blocking */
+                }
             }
 
             {

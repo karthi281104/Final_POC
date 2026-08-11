@@ -419,6 +419,32 @@ static void actionAddStock(AppContext *ctx)
     }
 }
 
+static void actionDeleteStock(AppContext *ctx)
+{
+    char symbol[SYMBOL_MAX_LEN];
+    status_t r;
+
+    readLine("Symbol to delete: ", symbol, sizeof(symbol));
+    if (!secValidateSymbol(symbol))
+    {
+        (void)printf("Invalid symbol format.\n");
+        return;
+    }
+
+    r = mainCacheDelete(&ctx->mainDb, symbol);
+    if (r == STATUS_OK)
+    {
+        /* Also remove from user's search cache if present */
+        (void)searchCacheDelete(&ctx->searchDb, symbol);
+        (void)printf("Stock %s deleted from main database.\n", symbol);
+        (void)loggerLog(LOG_AUDIT, "Admin deleted stock %s", symbol);
+    }
+    else
+    {
+        (void)printf("Failed to delete stock: %s\n", status_to_string(r));
+    }
+}
+
 static void actionManualPriceUpdate(AppContext *ctx)
 {
     char symbol[SYMBOL_MAX_LEN];
@@ -525,10 +551,11 @@ static void adminMenu(AppContext *ctx)
         (void)printf(" 9. Diagnostics (memory / performance)\n");
         (void)printf("10. Optimizer Reports (optimization / security / health)\n");
         (void)printf("11. Save All Databases Now\n");
+        (void)printf("12. Delete Stock\n");
         (void)printf(" 0. Logout\n");
         choice = readIntChoice("Choice: ");
 
-        if (!secValidateMenuChoice(choice, 0, 11))
+        if (!secValidateMenuChoice(choice, 0, 12))
         {
             (void)printf("Invalid choice.\n");
         }
@@ -554,6 +581,7 @@ static void adminMenu(AppContext *ctx)
                     (void)optimizerPrintSystemHealthReport(&ctx->mainDb, &ctx->searchDb);
                     break;
                 case 11: persistAll(ctx); (void)printf("Saved.\n"); break;
+                case 12: actionDeleteStock(ctx); break;
                 case 0: loggedOut = true; break;
                 default: break;
             }
