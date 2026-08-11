@@ -194,7 +194,7 @@ misra:
 	}
 	cppcheck --addon=misra \
 		--suppress=misra-config \
-		--std=c11 --platform=unix640 --force \
+		--std=c11 --platform=unix64 --force \
 		--library=$(STD_CFG) \
 		$(INC) $(SRC_DIR)
 	@echo ""
