@@ -46,13 +46,14 @@ static int unitTest1_HashFunction(void)
         "AAPL", "MSFT", "GOOGL", "A", "Z", "ZZZZZZ", "1", "ABCDEF", "NVDA", "JPM"
     };
     size_t i;
-    unsigned long h, h2;
+    unsigned long h;
 
     (void)printf("Test 1: Hash Function Test\n");
 
     /* Determinism + in-range for every symbol */
     for (i = 0U; i < (sizeof(syms)/sizeof(syms[0])); i++)
     {
+        unsigned long h2;
         h  = mainCacheHash(syms[i]);
         h2 = mainCacheHash(syms[i]);
         reportCase("unit", "Hash deterministic", (h == h2), "equal", (h==h2)?"equal":"diff", &fails);
@@ -86,7 +87,6 @@ static int unitTest2_MainCache(void)
 
     (void)printf("Test 2: Main Cache Test\n");
     (void)mainCacheInit(&mc);
-    (void)memset(&st, 0, sizeof(st));
 
     /* ---- NULL arg guards ---- */
     r = mainCacheAdd(NULL, &st);
@@ -357,7 +357,7 @@ static int unitTest4_Persistence(void)
     /* NULL arg guards */
     r = saveMainDbToPath(NULL, SCRATCH_STOCK_PATH);
     reportCase("unit", "saveMainDbToPath NULL cache => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
-    r = saveMainDbToPath((MainCache*)(uintptr_t)1, NULL);
+    r = saveMainDbToPath((MainCache*)1, NULL);
     reportCase("unit", "saveMainDbToPath NULL path => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
     r = loadMainDbFromPath(NULL, SCRATCH_STOCK_PATH);
     reportCase("unit", "loadMainDbFromPath NULL cache => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
@@ -575,7 +575,7 @@ static int unitTest6_Alerts(void)
 
     /* already triggered -> won't fire again */
     triggered = 0U;
-    r = alertsCheckPrice(&store,"AAPL",200.0,&triggered);
+    (void)alertsCheckPrice(&store,"AAPL",200.0,&triggered);
     reportCase("unit","Already-triggered alert not fired again",(triggered==0U),"0",(triggered==0U)?"ok":"re-fired",&fails);
 
     /* create BELOW alert */
@@ -583,20 +583,22 @@ static int unitTest6_Alerts(void)
     reportCase("unit","alertsCreate BELOW=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
 
     triggered = 0U;
-    r = alertsCheckPrice(&store,"MSFT",60.0,&triggered);
+    (void)alertsCheckPrice(&store,"MSFT",60.0,&triggered);
     reportCase("unit","BELOW alert does not fire above threshold",(triggered==0U),"0","ok",&fails);
 
     triggered = 0U;
     r = alertsCheckPrice(&store,"MSFT",40.0,&triggered);
-    reportCase("unit","BELOW alert fires at threshold cross",(triggered==1U),"1","ok",&fails);
+    reportCase("unit","BELOW alert fires at threshold cross",(r==STATUS_OK)&&(triggered==1U),"1",status_to_string(r),&fails);
 
     /* exact threshold fires (>= and <=) */
     r = alertsCreate(&store,"TSLA",100.0,ALERT_ABOVE,"u");
+    reportCase("unit","alertsCreate TSLA ABOVE=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
     triggered = 0U;
     (void)alertsCheckPrice(&store,"TSLA",100.0,&triggered);
     reportCase("unit","ABOVE fires at exact threshold",(triggered==1U),"1","ok",&fails);
 
     r = alertsCreate(&store,"AMZN",100.0,ALERT_BELOW,"u");
+    reportCase("unit","alertsCreate AMZN BELOW=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
     triggered = 0U;
     (void)alertsCheckPrice(&store,"AMZN",100.0,&triggered);
     reportCase("unit","BELOW fires at exact threshold",(triggered==1U),"1","ok",&fails);
@@ -607,7 +609,7 @@ static int unitTest6_Alerts(void)
     reportCase("unit","alertsGetAll returns correct count",(count==4U),"4","ok",&fails);
 
     /* outTriggeredCount NULL is safe */
-    r = alertsCreate(&store,"NVDA",200.0,ALERT_ABOVE,"u");
+    (void)alertsCreate(&store,"NVDA",200.0,ALERT_ABOVE,"u");
     r = alertsCheckPrice(&store,"NVDA",250.0,NULL);
     reportCase("unit","alertsCheckPrice NULL outCount=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
 
