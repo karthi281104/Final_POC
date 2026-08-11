@@ -425,3 +425,23 @@
 [2026-08-11 21:23:37] HEARTBEAT logger thread alive
 [2026-08-11 21:23:47] HEARTBEAT logger thread alive
 [2026-08-11 21:23:57] HEARTBEAT logger thread alive
+[2026-08-11 22:07:50] Loaded main DB from data/stock.db (100 stocks)
+[2026-08-11 22:07:50] Background threads started (feed/logger/stats)
+[2026-08-11 22:07:50] LOGIN FAILED user=0
+[2026-08-11 22:07:50] Background threads stopped cleanly
+[2026-08-11 22:07:50] All databases saved to disk
+[2026-08-11 22:09:29] Loaded main DB from data/stock.db (100 stocks)
+[2026-08-11 22:09:29] Background threads started (feed/logger/stats)
+[2026-08-11 22:09:29] LOGIN SUCCESS user=tester role=TESTER
+[2026-08-11 22:09:29] Background threads stopped cleanly
+[2026-08-11 22:09:29] Loaded per-user cache (0 entries) and alerts (0) for tester
+[2026-08-11 22:09:29] Background threads started (feed/logger/stats)
+[2026-08-11 22:09:30] LOGIN SUCCESS user=admin role=ADMIN
+[2026-08-11 22:09:30] LOGIN SUCCESS user=tester role=TESTER
+[2026-08-11 22:09:30] LOGIN SUCCESS user=user role=USER
+[2026-08-11 22:09:30] LOGIN FAILED user=admin
+[2026-08-11 22:09:30] LOGIN FAILED user=nobody
+[2026-08-11 22:09:30] Saved per-user cache and alerts for tester
+[2026-08-11 22:09:30] Background threads stopped cleanly
+[2026-08-11 22:09:30] Saved per-user cache and alerts for tester
+[2026-08-11 22:09:30] All databases saved to disk

@@ -1823,3 +1823,14 @@
 [2026-08-11 21:23:55] FEED TICK symbol=SBUX price=103.8668
 [2026-08-11 21:23:58] PRICE UPDATE symbol=BKNG newPrice=4282.3293
 [2026-08-11 21:23:58] FEED TICK symbol=BKNG price=4282.3293
+[2026-08-11 22:09:30] ALERT TRIGGERED symbol=AAPL type=ABOVE threshold=150.0000 price=160.0000 owner=testuser
+[2026-08-11 22:09:30] ALERT TRIGGERED symbol=MSFT type=BELOW threshold=50.0000 price=40.0000 owner=admin
+[2026-08-11 22:09:30] ALERT TRIGGERED symbol=TSLA type=ABOVE threshold=100.0000 price=100.0000 owner=u
+[2026-08-11 22:09:30] ALERT TRIGGERED symbol=AMZN type=BELOW threshold=100.0000 price=100.0000 owner=u
+[2026-08-11 22:09:30] ALERT TRIGGERED symbol=NVDA type=ABOVE threshold=200.0000 price=250.0000 owner=u
+[2026-08-11 22:09:30] PRICE UPDATE symbol=FEED newPrice=120.0000
+[2026-08-11 22:09:30] PRICE UPDATE symbol=FEED newPrice=150.0000
+[2026-08-11 22:09:30] PRICE UPDATE symbol=FEED newPrice=148.5000
+[2026-08-11 22:09:30] ALERT TRIGGERED symbol=ITGX type=ABOVE threshold=150.0000 price=160.0000 owner=tester
+[2026-08-11 22:09:30] PRICE UPDATE symbol=ITGX newPrice=160.0000
+[2026-08-11 22:09:30] Integration test marker entry

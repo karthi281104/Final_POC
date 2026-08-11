@@ -1228,9 +1228,25 @@ static status_t benchLinearSearch(const BenchFlatEntry *arr, size_t n, const cha
 
 static double benchNowMs(void)
 {
+    /* Prefer clock_gettime(CLOCK_MONOTONIC) where available; fall back to
+     * gettimeofday() for portability (older glibc or non-POSIX platforms). */
+#if defined(_POSIX_TIMERS) && (_POSIX_TIMERS > 0)
     struct timespec ts;
-    (void)clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ((double)ts.tv_sec * 1000.0) + ((double)ts.tv_nsec / 1000000.0);
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0)
+    {
+        return ((double)ts.tv_sec * 1000.0) + ((double)ts.tv_nsec / 1000000.0);
+    }
+    else
+    {
+        struct timeval tv;
+        (void)gettimeofday(&tv, NULL);
+        return ((double)tv.tv_sec * 1000.0) + ((double)tv.tv_usec / 1000.0);
+    }
+#else
+    struct timeval tv;
+    (void)gettimeofday(&tv, NULL);
+    return ((double)tv.tv_sec * 1000.0) + ((double)tv.tv_usec / 1000.0);
+#endif
 }
 
 #define BENCH_SEARCHES_PER_ROUND 2000U

@@ -25,6 +25,19 @@ INC         := -Iinclude
 CFLAGS      := $(STD) $(WARN) $(INC)
 LDFLAGS     := -pthread
 
+# Try to detect CUnit via pkg-config. If pkg-config/CUnit not found,
+# fall back to linking with -lcunit and continue (user may install
+# system CUnit package). Tests will warn if the header/library are
+# missing at runtime or build time.
+CUNIT_CFLAGS := $(shell pkg-config --cflags CUnit 2>/dev/null)
+CUNIT_LIBS   := $(shell pkg-config --libs CUnit 2>/dev/null)
+ifeq ($(strip $(CUNIT_LIBS)),)
+CUNIT_LIBS := -lcunit
+endif
+ifneq ($(strip $(CUNIT_CFLAGS)),)
+CFLAGS += $(CUNIT_CFLAGS)
+endif
+
 SRC_DIR     := src
 TEST_DIR    := test
 COVERAGE_DIR:= coverage
@@ -71,25 +84,25 @@ run: $(TARGET)
 # that test file's own header comment documents needing.
 ##############################################################################
 $(TEST_DIR)/test_hash: $(TEST_DIR)/test_hash.c $(SRC_DIR)/cache.c $(SRC_DIR)/common.c $(SRC_DIR)/memory.c
-	$(CC) $(CFLAGS) $^ -lcunit $(LDFLAGS) -o $@
+	$(CC) $(CFLAGS) $^ $(CUNIT_LIBS) $(LDFLAGS) -o $@
 
 $(TEST_DIR)/test_maincache: $(TEST_DIR)/test_maincache.c $(SRC_DIR)/cache.c $(SRC_DIR)/common.c $(SRC_DIR)/memory.c
-	$(CC) $(CFLAGS) $^ -lcunit $(LDFLAGS) -o $@
+	$(CC) $(CFLAGS) $^ $(CUNIT_LIBS) $(LDFLAGS) -o $@
 
 $(TEST_DIR)/test_searchcache: $(TEST_DIR)/test_searchcache.c $(SRC_DIR)/searchcache.c $(SRC_DIR)/common.c $(SRC_DIR)/memory.c
-	$(CC) $(CFLAGS) $^ -lcunit $(LDFLAGS) -o $@
+	$(CC) $(CFLAGS) $^ $(CUNIT_LIBS) $(LDFLAGS) -o $@
 
 $(TEST_DIR)/test_persistence: $(TEST_DIR)/test_persistence.c $(SRC_DIR)/persistence.c $(SRC_DIR)/cache.c $(SRC_DIR)/searchcache.c $(SRC_DIR)/common.c $(SRC_DIR)/memory.c $(SRC_DIR)/logger.c
-	$(CC) $(CFLAGS) $^ -lcunit $(LDFLAGS) -o $@
+	$(CC) $(CFLAGS) $^ $(CUNIT_LIBS) $(LDFLAGS) -o $@
 
 $(TEST_DIR)/test_stats: $(TEST_DIR)/test_stats.c $(SRC_DIR)/stats.c $(SRC_DIR)/common.c
-	$(CC) $(CFLAGS) $^ -lcunit $(LDFLAGS) -o $@
+	$(CC) $(CFLAGS) $^ $(CUNIT_LIBS) $(LDFLAGS) -o $@
 
 $(TEST_DIR)/test_security: $(TEST_DIR)/test_security.c $(SRC_DIR)/security.c $(SRC_DIR)/common.c
-	$(CC) $(CFLAGS) $^ -lcunit $(LDFLAGS) -o $@
+	$(CC) $(CFLAGS) $^ $(CUNIT_LIBS) $(LDFLAGS) -o $@
 
 $(TEST_DIR)/test_integration: $(TEST_DIR)/test_integration.c $(SRC_DIR)/cache.c $(SRC_DIR)/searchcache.c $(SRC_DIR)/alerts.c $(SRC_DIR)/stats.c $(SRC_DIR)/query.c $(SRC_DIR)/feed.c $(SRC_DIR)/security.c $(SRC_DIR)/logger.c $(SRC_DIR)/common.c $(SRC_DIR)/memory.c
-	$(CC) $(CFLAGS) $^ -lcunit $(LDFLAGS) -o $@
+	$(CC) $(CFLAGS) $^ $(CUNIT_LIBS) $(LDFLAGS) -o $@
 
 test: $(addprefix $(TEST_DIR)/,$(TEST_BINS))
 	@echo "=================================================="
