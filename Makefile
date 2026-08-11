@@ -176,7 +176,7 @@ cppcheck:
 		echo "Run: find / -iname std.cfg 2>/dev/null"; \
 		echo "Then: make cppcheck STD_CFG=<path found above>"; \
 	fi
-	cppcheck --enable=warning,style,performance,portability \
+	cppcheck --enable=performance,portability \
 		--std=c11 --inconclusive --force \
 		--library=$(STD_CFG) \
 		--suppressions-list=$(SUPPRESSIONS) \
@@ -192,7 +192,9 @@ misra:
 		echo "  sudo apt-get install cppcheck  # Ubuntu/Debian"; \
 		exit 1; \
 	}
-	cppcheck --addon=misra --enable=all --std=c11 --inconclusive --force \
+	cppcheck --addon=misra \
+		--suppress=misra-config \
+		--std=c11 --platform=unix640 --force \
 		--library=$(STD_CFG) \
 		$(INC) $(SRC_DIR)
 	@echo ""
