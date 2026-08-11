@@ -22,7 +22,9 @@ CC          := gcc
 STD         := -std=c11
 WARN        := -Wall -Wextra -Wpedantic
 INC         := -Iinclude
-CFLAGS      := $(STD) $(WARN) $(INC)
+# POSIX source defines needed on Linux for pthread_rwlock, strnlen, etc.
+POSIX_DEFS  := -D_POSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE
+CFLAGS      := $(STD) $(WARN) $(INC) $(POSIX_DEFS)
 LDFLAGS     := -pthread
 
 # Try to detect CUnit via pkg-config. If pkg-config/CUnit not found,
@@ -106,43 +108,22 @@ $(TEST_DIR)/test_integration: $(TEST_DIR)/test_integration.c $(SRC_DIR)/cache.c 
 
 test: $(addprefix $(TEST_DIR)/,$(TEST_BINS))
 	@echo "=================================================="
-	@echo " Running all 7 CUnit test binaries (or falling back to in-app tester)"
+	@echo " Running all 7 CUnit test binaries"
 	@echo "=================================================="
 	@failures=0; \
 	for t in $(TEST_BINS); do \
-		echo ""; \
 		echo "---- $$t ----"; \
-		./$(TEST_DIR)/$$t || failures=$$((failures+1)); \
+		./$(TEST_DIR)/$$t; \
+		if [ $$? -ne 0 ]; then failures=$$((failures+1)); fi; \
 	done; \
-	echo ""; \
 	echo "=================================================="; \
 	if [ $$failures -eq 0 ]; then \
 		echo " ALL CUNIT SUITES PASSED"; \
-		echo "=================================================="; \
-		exit 0; \
 	else \
 		echo " $$failures SUITE(S) FAILED"; \
-		echo "Attempting fallback: run in-app Smart Testing (no CUnit required)"; \
-		tmpfile=$$(mktemp /tmp/poc_test_output.XXXXXX 2>/dev/null || mktemp); \
-		if [ ! -x ./$(TARGET) ]; then \
-			echo "Building $(TARGET) for fallback tester..."; \
-			$(MAKE) $(TARGET) >/dev/null 2>&1 || true; \
-		fi; \
-		# Drive the interactive Tester Module: login tester/tester123 -> open Tester -> Smart Testing -> back -> exit
-		printf "tester\ntester123\n1\n5\n\n0\n" | ./$(TARGET) > $$tmpfile 2>&1 || true; \
-		if grep -q "ALL TESTS PASSED" $$tmpfile; then \
-			echo "Fallback in-app Smart Testing PASSED (treating overall as success)."; \
-			rm -f $$tmpfile; \
-			echo "=================================================="; \
-			exit 0; \
-		else \
-			echo "Fallback in-app Smart Testing did NOT report all-passed. See $$tmpfile"; \
-			cat $$tmpfile || true; \
-			rm -f $$tmpfile; \
-			echo "=================================================="; \
-			exit $$failures; \
-		fi; \
-	fi
+	fi; \
+	echo "=================================================="; \
+	exit $$failures
 
 ##############################################################################
 # Valgrind — memory error / leak detection

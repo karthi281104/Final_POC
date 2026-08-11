@@ -1,0 +1,40 @@
+# ── Build artifacts ──────────────────────────────────────────────────
+# Main program binary (Linux)
+/stock_cache
+# Coverage instrumented binary
+/stock_cache_coverage
+# Object files
+src/*.o
+# Coverage build directory
+/cov_build/
+# Coverage reports
+/coverage/
+# gcov raw files
+*.gcov
+*.gcda
+*.gcno
+
+# ── Test binaries (Linux, no extension) ──────────────────────────────
+/test/test_hash
+/test/test_maincache
+/test/test_searchcache
+/test/test_persistence
+/test/test_stats
+/test/test_security
+/test/test_integration
+
+# ── Windows artifacts (ignored if pushed from Windows dev machine) ────
+*.exe
+*.out
+poc_app.exe
+
+# ── Runtime-generated data and logs ──────────────────────────────────
+/data/
+/logs/
+
+# ── Editor / IDE files ───────────────────────────────────────────────
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store

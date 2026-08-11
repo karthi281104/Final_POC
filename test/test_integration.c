@@ -48,6 +48,7 @@
 #include "feed.h"
 #include "logger.h"
 #include "memory.h"
+#include <sys/types.h>
 #include <sys/stat.h>
 
 /* ── Shared integration state (owned by suite_setup / suite_teardown) ── */

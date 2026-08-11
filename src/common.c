@@ -82,6 +82,8 @@ const char *status_to_string(status_t s)
         case STATUS_ERR_AUTH:         str = "AUTH_FAILED"; break;
         case STATUS_ERR_PERMISSION:   str = "PERMISSION_DENIED"; break;
         case STATUS_ERR_LOCK:         str = "LOCK_ERROR"; break;
+        case STATUS_ERR_BUSY:         str = "BUSY"; break;
+        case STATUS_ERR_UNKNOWN:      str = "UNKNOWN"; break;
         default:                      str = "UNKNOWN"; break;
     }
     return str;
