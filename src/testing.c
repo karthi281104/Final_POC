@@ -90,6 +90,10 @@ static int unitTest2_MainCache(void)
     (void)mainCacheInit(&mc);
 
     /* ---- NULL arg guards ---- */
+    /* Initialise st so that passing &st to functions is not flagged as
+     * uninitialized by static analysis; the content is irrelevant here
+     * because the NULL cache/stock pointer is checked first. */
+    memset(&st, 0, sizeof(st));
     r = mainCacheAdd(NULL, &st);
     reportCase("unit", "Add NULL cache => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
     r = mainCacheAdd(&mc, NULL);
@@ -358,7 +362,7 @@ static int unitTest4_Persistence(void)
     /* NULL arg guards */
     r = saveMainDbToPath(NULL, SCRATCH_STOCK_PATH);
     reportCase("unit", "saveMainDbToPath NULL cache => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
-    r = saveMainDbToPath((MainCache*)1, NULL);
+    r = saveMainDbToPath(&mc, NULL);
     reportCase("unit", "saveMainDbToPath NULL path => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
     r = loadMainDbFromPath(NULL, SCRATCH_STOCK_PATH);
     reportCase("unit", "loadMainDbFromPath NULL cache => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
