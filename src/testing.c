@@ -9,6 +9,7 @@
 #include "feed.h"
 #include "query.h"
 #include "logger.h"
+#include "auth.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -41,17 +42,38 @@ static void reportCase(const char *category, const char *caseName, bool passed,
 static int unitTest1_HashFunction(void)
 {
     int fails = 0;
-    unsigned long h1 = mainCacheHash("AAPL");
-    unsigned long h2 = mainCacheHash("AAPL");
-    unsigned long h3 = mainCacheHash("MSFT");
-    bool deterministic = (h1 == h2);
-    bool inRange = (h1 < MAIN_DB_BUCKETS) && (h3 < MAIN_DB_BUCKETS);
+    static const char * const syms[] = {
+        "AAPL", "MSFT", "GOOGL", "A", "Z", "ZZZZZZ", "1", "ABCDEF", "NVDA", "JPM"
+    };
+    size_t i;
+    unsigned long h, h2;
 
     (void)printf("Test 1: Hash Function Test\n");
-    reportCase("unit", "Hash is deterministic for the same symbol", deterministic,
-               "h1 == h2", deterministic ? "equal" : "different", &fails);
-    reportCase("unit", "Hash values fall within bucket range", inRange,
-               "< MAIN_DB_BUCKETS", inRange ? "in range" : "out of range", &fails);
+
+    /* Determinism + in-range for every symbol */
+    for (i = 0U; i < (sizeof(syms)/sizeof(syms[0])); i++)
+    {
+        h  = mainCacheHash(syms[i]);
+        h2 = mainCacheHash(syms[i]);
+        reportCase("unit", "Hash deterministic", (h == h2), "equal", (h==h2)?"equal":"diff", &fails);
+        reportCase("unit", "Hash in bucket range", (h < MAIN_DB_BUCKETS), "in range", (h<MAIN_DB_BUCKETS)?"ok":"out", &fails);
+    }
+
+    /* NULL input returns value still in range */
+    h = mainCacheHash(NULL);
+    reportCase("unit", "Hash(NULL) in range", (h < MAIN_DB_BUCKETS), "in range", (h<MAIN_DB_BUCKETS)?"ok":"out", &fails);
+
+    /* Empty string in range */
+    h = mainCacheHash("");
+    reportCase("unit", "Hash(\"\") in range", (h < MAIN_DB_BUCKETS), "in range", (h<MAIN_DB_BUCKETS)?"ok":"out", &fails);
+
+    /* Different symbols produce different hashes (collision not guaranteed,
+     * but AAPL and MSFT are known to differ under djb2) */
+    {
+        unsigned long hA = mainCacheHash("AAPL");
+        unsigned long hM = mainCacheHash("MSFT");
+        reportCase("unit", "AAPL and MSFT hash differently", (hA != hM), "different", (hA!=hM)?"diff":"same", &fails);
+    }
     return fails;
 }
 
@@ -65,30 +87,118 @@ static int unitTest2_MainCache(void)
     (void)printf("Test 2: Main Cache Test\n");
     (void)mainCacheInit(&mc);
 
+    /* ---- NULL arg guards ---- */
+    r = mainCacheAdd(NULL, &st);
+    reportCase("unit", "Add NULL cache => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = mainCacheAdd(&mc, NULL);
+    reportCase("unit", "Add NULL stock => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = mainCacheSearch(NULL, "X", &found);
+    reportCase("unit", "Search NULL cache => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = mainCacheSearch(&mc, NULL, &found);
+    reportCase("unit", "Search NULL symbol => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = mainCacheSearch(&mc, "X", NULL);
+    reportCase("unit", "Search NULL out => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = mainCacheUpdatePrice(NULL, "X", 1.0);
+    reportCase("unit", "UpdatePrice NULL cache => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = mainCacheUpdatePrice(&mc, NULL, 1.0);
+    reportCase("unit", "UpdatePrice NULL symbol => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = mainCacheDelete(NULL, "X");
+    reportCase("unit", "Delete NULL cache => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = mainCacheDelete(&mc, NULL);
+    reportCase("unit", "Delete NULL symbol => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+
+    /* ---- count on empty cache ---- */
+    reportCase("unit", "Count empty cache == 0", (mainCacheCount(&mc)==0U), "0", "see count", &fails);
+    reportCase("unit", "Contains on empty => false", !mainCacheContains(&mc,"ZZZT"), "false", "ok", &fails);
+
+    /* ---- not-found error paths ---- */
+    r = mainCacheSearch(&mc, "ZZZT", &found);
+    reportCase("unit", "Search missing stock => NOT_FOUND", (r==STATUS_ERR_NOT_FOUND), "NOT_FOUND", status_to_string(r), &fails);
+    r = mainCacheUpdatePrice(&mc, "ZZZT", 10.0);
+    reportCase("unit", "UpdatePrice missing stock => NOT_FOUND", (r==STATUS_ERR_NOT_FOUND), "NOT_FOUND", status_to_string(r), &fails);
+    r = mainCacheDelete(&mc, "ZZZT");
+    reportCase("unit", "Delete missing stock => NOT_FOUND", (r==STATUS_ERR_NOT_FOUND), "NOT_FOUND", status_to_string(r), &fails);
+
+    /* ---- normal add / search / update / delete ---- */
     memset(&st, 0, sizeof(st));
     (void)safe_strcpy(st.symbol, sizeof(st.symbol), "ZZZT");
     (void)safe_strcpy(st.name, sizeof(st.name), "Zzz Test Corp");
     st.price = 50.0;
-
     r = mainCacheAdd(&mc, &st);
-    reportCase("unit", "Add new stock succeeds", (r == STATUS_OK), "STATUS_OK",
-               status_to_string(r), &fails);
+    reportCase("unit", "Add new stock => OK", (r==STATUS_OK), "STATUS_OK", status_to_string(r), &fails);
+    reportCase("unit", "Count after add == 1", (mainCacheCount(&mc)==1U), "1", "see count", &fails);
+    reportCase("unit", "Contains after add => true", mainCacheContains(&mc,"ZZZT"), "true", "ok", &fails);
+
+    /* duplicate add */
+    r = mainCacheAdd(&mc, &st);
+    reportCase("unit", "Add duplicate => DUPLICATE", (r==STATUS_ERR_DUPLICATE), "DUPLICATE", status_to_string(r), &fails);
+    reportCase("unit", "Count unchanged after dup add", (mainCacheCount(&mc)==1U), "1", "see count", &fails);
 
     r = mainCacheSearch(&mc, "ZZZT", &found);
-    reportCase("unit", "Search finds added stock", (r == STATUS_OK) && (found.price == 50.0),
-               "found price 50.0", (r == STATUS_OK) ? "found" : "not found", &fails);
+    reportCase("unit", "Search finds added stock", (r==STATUS_OK)&&(found.price==50.0), "50.0", (r==STATUS_OK)?"found":"nf", &fails);
+
+    /* Search exact symbol case */
+    r = mainCacheSearch(&mc, "ZZZT", &found);
+    reportCase("unit", "Search exact symbol case => OK", (r==STATUS_OK), "OK", status_to_string(r), &fails);
 
     r = mainCacheUpdatePrice(&mc, "ZZZT", 75.0);
     (void)mainCacheSearch(&mc, "ZZZT", &found);
-    reportCase("unit", "Update price applies", (r == STATUS_OK) && (found.price == 75.0),
-               "price == 75.0", (found.price == 75.0) ? "75.0" : "mismatch", &fails);
+    reportCase("unit", "UpdatePrice applies", (r==STATUS_OK)&&(found.price==75.0), "75.0", (found.price==75.0)?"ok":"mismatch", &fails);
 
+    /* ---- snapshot ---- */
+    {
+        Stock *arr = NULL;
+        size_t cnt = 0U;
+        r = mainCacheSnapshot(&mc, &arr, &cnt);
+        reportCase("unit", "Snapshot OK", (r==STATUS_OK), "OK", status_to_string(r), &fails);
+        reportCase("unit", "Snapshot count == 1", (cnt==1U), "1", "see cnt", &fails);
+        if (arr != NULL) { mmFree(arr); }
+    }
+    /* snapshot with NULL args */
+    {
+        Stock *arr2 = NULL; size_t cnt2 = 0U;
+        r = mainCacheSnapshot(NULL, &arr2, &cnt2);
+        reportCase("unit", "Snapshot NULL cache => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+        r = mainCacheSnapshot(&mc, NULL, &cnt2);
+        reportCase("unit", "Snapshot NULL arr => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+        r = mainCacheSnapshot(&mc, &arr2, NULL);
+        reportCase("unit", "Snapshot NULL cnt => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    }
+
+    /* ---- add second stock (collision chain exercise) ---- */
+    {
+        Stock st2;
+        memset(&st2, 0, sizeof(st2));
+        (void)safe_strcpy(st2.symbol, sizeof(st2.symbol), "ZZZX");
+        (void)safe_strcpy(st2.name, sizeof(st2.name), "Chain Test");
+        st2.price = 11.0;
+        (void)mainCacheAdd(&mc, &st2);
+        reportCase("unit", "Count after 2nd add == 2", (mainCacheCount(&mc)==2U), "2", "see count", &fails);
+        /* delete non-head node */
+        r = mainCacheDelete(&mc, "ZZZX");
+        reportCase("unit", "Delete 2nd stock OK", (r==STATUS_OK), "OK", status_to_string(r), &fails);
+        reportCase("unit", "First stock intact after delete of 2nd", mainCacheContains(&mc,"ZZZT"), "true", "ok", &fails);
+    }
+
+    /* delete head node */
     r = mainCacheDelete(&mc, "ZZZT");
-    reportCase("unit", "Delete removes stock", (r == STATUS_OK) && (!mainCacheContains(&mc, "ZZZT")),
-               "not found after delete", mainCacheContains(&mc, "ZZZT") ? "still present" : "removed",
-               &fails);
+    reportCase("unit", "Delete head stock => OK", (r==STATUS_OK), "OK", status_to_string(r), &fails);
+    reportCase("unit", "Not present after delete", !mainCacheContains(&mc,"ZZZT"), "false", "ok", &fails);
+    reportCase("unit", "Count == 0 after all deletes", (mainCacheCount(&mc)==0U), "0", "see count", &fails);
+
+    /* snapshot on empty cache */
+    {
+        Stock *arr = NULL; size_t cnt = 99U;
+        r = mainCacheSnapshot(&mc, &arr, &cnt);
+        reportCase("unit", "Snapshot empty cache => OK", (r==STATUS_OK), "OK", status_to_string(r), &fails);
+        reportCase("unit", "Snapshot empty gives cnt==0", (cnt==0U), "0", "see cnt", &fails);
+        reportCase("unit", "Snapshot empty gives NULL arr", (arr==NULL), "NULL", "ok", &fails);
+    }
 
     (void)mainCacheDestroy(&mc);
+    /* destroy NULL */
+    r = mainCacheDestroy(NULL);
+    reportCase("unit", "Destroy NULL => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
     return fails;
 }
 
@@ -101,6 +211,87 @@ static int unitTest3_SearchCacheLRU(void)
     Stock found;
 
     (void)printf("Test 3: Search Cache (LRU) Test\n");
+
+    /* NULL init guard */
+    r = searchCacheInit(NULL);
+    reportCase("unit", "SearchCacheInit NULL => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+
+    (void)searchCacheInit(&sc);
+
+    /* NULL arg guards for touch/search/updatePrice */
+    r = searchCacheTouch(NULL, NULL);
+    reportCase("unit", "Touch NULL sc => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = searchCacheSearch(NULL, "X", &found);
+    reportCase("unit", "Search NULL sc => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = searchCacheSearch(&sc, NULL, &found);
+    reportCase("unit", "Search NULL sym => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = searchCacheSearch(&sc, "X", NULL);
+    reportCase("unit", "Search NULL out => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = searchCacheUpdatePrice(NULL, "X", 1.0);
+    reportCase("unit", "UpdatePrice NULL sc => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = searchCacheUpdatePrice(&sc, NULL, 1.0);
+    reportCase("unit", "UpdatePrice NULL sym => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+
+    /* count on empty */
+    reportCase("unit", "Count empty sc == 0", (searchCacheCount(&sc)==0U), "0", "ok", &fails);
+    reportCase("unit", "Contains empty => false", !searchCacheContains(&sc,"AAPL"), "false", "ok", &fails);
+
+    /* search miss on empty */
+    r = searchCacheSearch(&sc, "AAPL", &found);
+    reportCase("unit", "Search empty => NOT_FOUND", (r==STATUS_ERR_NOT_FOUND), "NOT_FOUND", status_to_string(r), &fails);
+
+    /* updatePrice miss */
+    r = searchCacheUpdatePrice(&sc, "AAPL", 200.0);
+    reportCase("unit", "UpdatePrice missing => NOT_FOUND", (r==STATUS_ERR_NOT_FOUND), "NOT_FOUND", status_to_string(r), &fails);
+
+    /* insert one and updatePrice */
+    {
+        Stock st;
+        memset(&st, 0, sizeof(st));
+        (void)safe_strcpy(st.symbol, sizeof(st.symbol), "AAPL");
+        (void)safe_strcpy(st.name, sizeof(st.name), "Apple");
+        st.price = 100.0;
+        (void)searchCacheTouch(&sc, &st);
+        r = searchCacheUpdatePrice(&sc, "AAPL", 200.0);
+        reportCase("unit", "UpdatePrice existing => OK", (r==STATUS_OK), "OK", status_to_string(r), &fails);
+        r = searchCacheSearch(&sc, "AAPL", &found);
+        reportCase("unit", "Price updated in cache", (r==STATUS_OK)&&(found.price==200.0), "200.0", (r==STATUS_OK)?"ok":"nf", &fails);
+    }
+
+    /* touch existing = move-to-front, update value */
+    {
+        Stock st2;
+        memset(&st2, 0, sizeof(st2));
+        (void)safe_strcpy(st2.symbol, sizeof(st2.symbol), "AAPL");
+        (void)safe_strcpy(st2.name, sizeof(st2.name), "Apple v2");
+        st2.price = 300.0;
+        r = searchCacheTouch(&sc, &st2);
+        reportCase("unit", "Touch existing => OK", (r==STATUS_OK), "OK", status_to_string(r), &fails);
+        r = searchCacheSearch(&sc, "AAPL", &found);
+        reportCase("unit", "Touch updates value", (r==STATUS_OK)&&(found.price==300.0), "300.0", (r==STATUS_OK)?"ok":"nf", &fails);
+    }
+
+    /* snapshot one-element cache */
+    {
+        Stock *arr = NULL; size_t cnt = 0U;
+        r = searchCacheSnapshot(&sc, &arr, &cnt);
+        reportCase("unit", "Snapshot 1-elem OK", (r==STATUS_OK)&&(cnt==1U), "OK,cnt=1", status_to_string(r), &fails);
+        if (arr != NULL) { mmFree(arr); }
+    }
+    /* snapshot NULL args */
+    {
+        Stock *a2 = NULL; size_t c2 = 0U;
+        r = searchCacheSnapshot(NULL, &a2, &c2);
+        reportCase("unit", "Snapshot NULL sc => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+        r = searchCacheSnapshot(&sc, NULL, &c2);
+        reportCase("unit", "Snapshot NULL arr => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+        r = searchCacheSnapshot(&sc, &a2, NULL);
+        reportCase("unit", "Snapshot NULL cnt => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    }
+
+    (void)searchCacheDestroy(&sc);
+
+    /* fresh cache for LRU eviction tests */
     (void)searchCacheInit(&sc);
 
     for (i = 0U; i < (SEARCH_CACHE_CAPACITY + 2U); i++)
@@ -118,22 +309,19 @@ static int unitTest3_SearchCacheLRU(void)
     reportCase("unit", "Cache caps at SEARCH_CACHE_CAPACITY after overflow inserts",
                (searchCacheCount(&sc) == SEARCH_CACHE_CAPACITY), "10", "varies", &fails);
 
-    r = searchCacheSearch(&sc, "S000", &found); /* first-ever insert: should be evicted */
-    reportCase("unit", "Oldest entry was evicted", (r != STATUS_OK), "NOT_FOUND",
-               status_to_string(r), &fails);
+    r = searchCacheSearch(&sc, "S000", &found);
+    reportCase("unit", "Oldest entry was evicted", (r != STATUS_OK), "NOT_FOUND", status_to_string(r), &fails);
 
-    r = searchCacheSearch(&sc, "S011", &found); /* most recent insert: should remain */
-    reportCase("unit", "Most recent entry still present", (r == STATUS_OK), "OK",
-               status_to_string(r), &fails);
+    r = searchCacheSearch(&sc, "S011", &found);
+    reportCase("unit", "Most recent entry still present", (r == STATUS_OK), "OK", status_to_string(r), &fails);
 
-    /* Move-to-front: touch S002 again, then overflow once more; S002 should survive. */
     {
         Stock st;
         memset(&st, 0, sizeof(st));
         (void)safe_strcpy(st.symbol, sizeof(st.symbol), "S002");
         (void)safe_strcpy(st.name, sizeof(st.name), "LRU Test");
         st.price = 2.0;
-        (void)searchCacheTouch(&sc, &st); /* refresh S002 to most-recently-used */
+        (void)searchCacheTouch(&sc, &st);
     }
     {
         Stock st;
@@ -141,11 +329,15 @@ static int unitTest3_SearchCacheLRU(void)
         (void)safe_strcpy(st.symbol, sizeof(st.symbol), "SNEW");
         (void)safe_strcpy(st.name, sizeof(st.name), "LRU Test");
         st.price = 9.0;
-        (void)searchCacheTouch(&sc, &st); /* forces one eviction: current LRU tail */
+        (void)searchCacheTouch(&sc, &st);
     }
     r = searchCacheSearch(&sc, "S002", &found);
     reportCase("unit", "Move-to-front protects recently-touched entry from eviction",
                (r == STATUS_OK), "OK", status_to_string(r), &fails);
+
+    /* destroy NULL */
+    r = searchCacheDestroy(NULL);
+    reportCase("unit", "SearchCacheDestroy NULL => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
 
     (void)searchCacheDestroy(&sc);
     return fails;
@@ -161,40 +353,97 @@ static int unitTest4_Persistence(void)
 
     (void)printf("Test 4: Persistence Test (scratch files only, never touches real DBs)\n");
 
+    /* NULL arg guards */
+    r = saveMainDbToPath(NULL, SCRATCH_STOCK_PATH);
+    reportCase("unit", "saveMainDbToPath NULL cache => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = saveMainDbToPath((MainCache*)1, NULL);
+    reportCase("unit", "saveMainDbToPath NULL path => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = loadMainDbFromPath(NULL, SCRATCH_STOCK_PATH);
+    reportCase("unit", "loadMainDbFromPath NULL cache => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = saveCacheToPath(NULL, SCRATCH_CACHE_PATH);
+    reportCase("unit", "saveCacheToPath NULL sc => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = loadCacheFromPath(NULL, SCRATCH_CACHE_PATH);
+    reportCase("unit", "loadCacheFromPath NULL sc => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+
+    /* bad path (unwritable directory) */
     (void)mainCacheInit(&mc);
-    memset(&st, 0, sizeof(st));
-    (void)safe_strcpy(st.symbol, sizeof(st.symbol), "PSTX");
-    (void)safe_strcpy(st.name, sizeof(st.name), "Persist Test Co");
-    st.price = 33.5;
-    (void)mainCacheAdd(&mc, &st);
+    r = loadMainDbFromPath(&mc, "/no/such/path/file.db");
+    reportCase("unit", "loadMainDbFromPath bad path => IO_ERROR", (r==STATUS_ERR_IO), "IO_ERROR", status_to_string(r), &fails);
+    r = saveMainDbToPath(&mc, "/no/such/path/file.db");
+    reportCase("unit", "saveMainDbToPath bad path => IO_ERROR", (r==STATUS_ERR_IO), "IO_ERROR", status_to_string(r), &fails);
+
+    /* add multiple stocks and verify all round-trip */
+    {
+        Stock st2;
+        memset(&st2, 0, sizeof(st2));
+        (void)safe_strcpy(st2.symbol, sizeof(st2.symbol), "PSTX");
+        (void)safe_strcpy(st2.name, sizeof(st2.name), "Persist Test Co");
+        st2.price = 33.5;
+        (void)mainCacheAdd(&mc, &st2);
+
+        memset(&st2, 0, sizeof(st2));
+        (void)safe_strcpy(st2.symbol, sizeof(st2.symbol), "TSTB");
+        (void)safe_strcpy(st2.name, sizeof(st2.name), "Test B Corp");
+        st2.price = 99.0;
+        (void)mainCacheAdd(&mc, &st2);
+    }
 
     r = saveMainDbToPath(&mc, SCRATCH_STOCK_PATH);
-    reportCase("unit", "Save main DB to scratch path", (r == STATUS_OK), "STATUS_OK",
-               status_to_string(r), &fails);
+    reportCase("unit", "Save main DB to scratch path", (r == STATUS_OK), "STATUS_OK", status_to_string(r), &fails);
 
     {
         MainCache mc2;
         (void)mainCacheInit(&mc2);
         r = loadMainDbFromPath(&mc2, SCRATCH_STOCK_PATH);
+        reportCase("unit", "Load main DB OK", (r==STATUS_OK), "OK", status_to_string(r), &fails);
         (void)mainCacheSearch(&mc2, "PSTX", &found);
-        reportCase("unit", "Reload main DB round-trips price correctly",
-                   (r == STATUS_OK) && (found.price == 33.5),
-                   "price == 33.5", (found.price == 33.5) ? "33.5" : "mismatch", &fails);
+        reportCase("unit", "Reload PSTX price", (found.price==33.5), "33.5", (found.price==33.5)?"ok":"mismatch", &fails);
+        reportCase("unit", "Reload TSTB present", mainCacheContains(&mc2, "TSTB"), "true", "ok", &fails);
         (void)mainCacheDestroy(&mc2);
     }
 
     (void)searchCacheInit(&sc);
+    memset(&st, 0, sizeof(st));
+    (void)safe_strcpy(st.symbol, sizeof(st.symbol), "PSTX");
+    (void)safe_strcpy(st.name, sizeof(st.name), "Persist Test Co");
+    st.price = 33.5;
     (void)searchCacheTouch(&sc, &st);
+
+    /* bad path for cache save */
+    r = saveCacheToPath(&sc, "/no/such/path/cache.db");
+    reportCase("unit", "saveCacheToPath bad path => IO_ERROR", (r==STATUS_ERR_IO), "IO_ERROR", status_to_string(r), &fails);
+
     r = saveCacheToPath(&sc, SCRATCH_CACHE_PATH);
-    reportCase("unit", "Save search cache to scratch path", (r == STATUS_OK), "STATUS_OK",
-               status_to_string(r), &fails);
+    reportCase("unit", "Save search cache to scratch path", (r == STATUS_OK), "STATUS_OK", status_to_string(r), &fails);
 
     (void)searchCacheInit(&scLoaded);
     r = loadCacheFromPath(&scLoaded, SCRATCH_CACHE_PATH);
     reportCase("unit", "Reload search cache round-trips entry",
                (r == STATUS_OK) && searchCacheContains(&scLoaded, "PSTX"),
-               "PSTX present", searchCacheContains(&scLoaded, "PSTX") ? "present" : "missing",
-               &fails);
+               "PSTX present", searchCacheContains(&scLoaded, "PSTX") ? "present" : "missing", &fails);
+
+    /* bad path for cache load */
+    {
+        SearchCache scBad;
+        (void)searchCacheInit(&scBad);
+        r = loadCacheFromPath(&scBad, "/no/such/path/cache.db");
+        reportCase("unit", "loadCacheFromPath bad path => IO_ERROR", (r==STATUS_ERR_IO), "IO_ERROR", status_to_string(r), &fails);
+        (void)searchCacheDestroy(&scBad);
+    }
+
+    /* empty cache save/load */
+    {
+        SearchCache scEmpty, scReloaded;
+        (void)searchCacheInit(&scEmpty);
+        r = saveCacheToPath(&scEmpty, SCRATCH_CACHE_PATH);
+        reportCase("unit", "Save empty search cache => OK", (r==STATUS_OK), "OK", status_to_string(r), &fails);
+        (void)searchCacheInit(&scReloaded);
+        r = loadCacheFromPath(&scReloaded, SCRATCH_CACHE_PATH);
+        reportCase("unit", "Load empty search cache => OK", (r==STATUS_OK), "OK", status_to_string(r), &fails);
+        reportCase("unit", "Empty cache reloads as empty", (searchCacheCount(&scReloaded)==0U), "0", "ok", &fails);
+        (void)searchCacheDestroy(&scEmpty);
+        (void)searchCacheDestroy(&scReloaded);
+    }
 
     (void)mainCacheDestroy(&mc);
     (void)searchCacheDestroy(&sc);
@@ -210,10 +459,45 @@ static int unitTest5_Statistics(void)
     int fails = 0;
     Stats stats;
     double ratio;
+    status_t r;
 
     (void)printf("Test 5: Statistics Test\n");
-    (void)statsInit(&stats);
 
+    /* NULL init/destroy guards */
+    r = statsInit(NULL);
+    reportCase("unit", "statsInit NULL => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+    r = statsDestroy(NULL);
+    reportCase("unit", "statsDestroy NULL => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+
+    /* NULL snapshot arg */
+    r = statsGetSnapshot(NULL, NULL);
+    reportCase("unit", "statsGetSnapshot NULL stats => INVALID_ARG", (r==STATUS_ERR_INVALID_ARG), "INVALID_ARG", status_to_string(r), &fails);
+
+    /* zero-division: no hits or misses => ratio == 0.0 */
+    (void)statsInit(&stats);
+    ratio = statsGetHitRatio(&stats);
+    reportCase("unit", "Hit ratio with no lookups == 0.0", (ratio == 0.0), "0.0", (ratio==0.0)?"ok":"nonzero", &fails);
+
+    /* NULL pass-through (should be silent no-ops) */
+    statsRecordSearch(NULL);
+    statsRecordUpdate(NULL);
+    statsRecordCacheHit(NULL);
+    statsRecordCacheMiss(NULL);
+    reportCase("unit", "NULL stat ops are no-ops (no crash)", true, "no crash", "ok", &fails);
+
+    /* snapshot with only misses => ratio == 0.0 */
+    statsRecordCacheMiss(&stats);
+    statsRecordCacheMiss(&stats);
+    {
+        StatsSnapshot snap;
+        (void)statsGetSnapshot(&stats, &snap);
+        reportCase("unit", "All-miss ratio == 0.0", (snap.hitRatio == 0.0), "0.0", (snap.hitRatio==0.0)?"ok":"nonzero", &fails);
+        reportCase("unit", "Snapshot cacheMisses == 2", (snap.cacheMisses==2UL), "2", "ok", &fails);
+    }
+    (void)statsDestroy(&stats);
+
+    /* main counting test */
+    (void)statsInit(&stats);
     statsRecordSearch(&stats);
     statsRecordSearch(&stats);
     statsRecordCacheHit(&stats);
@@ -223,20 +507,437 @@ static int unitTest5_Statistics(void)
     statsRecordUpdate(&stats);
 
     ratio = statsGetHitRatio(&stats);
-    /* 3 hits, 1 miss => 0.75 */
-    reportCase("unit", "Hit ratio math is correct (3 hits / 1 miss = 0.75)",
+    reportCase("unit", "Hit ratio 3/4 == 0.75",
                (ratio > 0.749) && (ratio < 0.751), "0.75", "computed", &fails);
 
     {
         StatsSnapshot snap;
-        (void)statsGetSnapshot(&stats, &snap);
-        reportCase("unit", "Counters match recorded operations",
-                   (snap.searchCount == 2UL) && (snap.updateCount == 1UL) &&
-                   (snap.cacheHits == 3UL) && (snap.cacheMisses == 1UL),
+        r = statsGetSnapshot(&stats, &snap);
+        reportCase("unit", "statsGetSnapshot => OK", (r==STATUS_OK), "OK", status_to_string(r), &fails);
+        reportCase("unit", "Counters match operations",
+                   (snap.searchCount==2UL)&&(snap.updateCount==1UL)&&
+                   (snap.cacheHits==3UL)&&(snap.cacheMisses==1UL),
                    "search=2 update=1 hits=3 misses=1", "see counters", &fails);
+        reportCase("unit", "Snapshot hitRatio matches direct query",
+                   (snap.hitRatio > 0.749) && (snap.hitRatio < 0.751), "0.75", "ok", &fails);
+    }
+
+    /* getHitRatio with only hits => ratio == 1.0 */
+    (void)statsDestroy(&stats);
+    (void)statsInit(&stats);
+    statsRecordCacheHit(&stats);
+    ratio = statsGetHitRatio(&stats);
+    reportCase("unit", "All-hit ratio == 1.0", (ratio > 0.999), "1.0", (ratio>0.999)?"ok":"low", &fails);
+
+    (void)statsDestroy(&stats);
+    return fails;
+}
+
+/* ===================== UNIT TEST 6: Alerts ============================= */
+static int unitTest6_Alerts(void)
+{
+    int fails = 0;
+    AlertStore store;
+    Alert all[MAX_ALERTS];
+    size_t count = 0U;
+    size_t triggered = 0U;
+    status_t r;
+
+    (void)printf("Test 6: Alerts Test\n");
+
+    /* NULL guards */
+    r = alertsInit(NULL);
+    reportCase("unit","alertsInit NULL=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+    r = alertsCreate(NULL,"AAPL",100.0,ALERT_ABOVE,"u");
+    reportCase("unit","alertsCreate NULL store=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+    r = alertsCheckPrice(NULL,"AAPL",100.0,&triggered);
+    reportCase("unit","alertsCheckPrice NULL store=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+    r = alertsGetAll(NULL,all,MAX_ALERTS,&count);
+    reportCase("unit","alertsGetAll NULL store=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+
+    (void)alertsInit(&store);
+
+    /* count on empty store */
+    reportCase("unit","alertsCount empty==0",(alertsCount(&store)==0U),"0","ok",&fails);
+
+    /* create ABOVE alert and fire it */
+    r = alertsCreate(&store,"AAPL",150.0,ALERT_ABOVE,"testuser");
+    reportCase("unit","alertsCreate ABOVE=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+    reportCase("unit","alertsCount after create==1",(alertsCount(&store)==1U),"1","ok",&fails);
+
+    triggered = 0U;
+    r = alertsCheckPrice(&store,"AAPL",140.0,&triggered);
+    reportCase("unit","ABOVE alert does not fire below threshold",(r==STATUS_OK)&&(triggered==0U),"0",status_to_string(r),&fails);
+
+    r = alertsCheckPrice(&store,"AAPL",160.0,&triggered);
+    reportCase("unit","ABOVE alert fires at threshold cross",(r==STATUS_OK)&&(triggered==1U),"1",status_to_string(r),&fails);
+
+    /* already triggered -> won't fire again */
+    triggered = 0U;
+    r = alertsCheckPrice(&store,"AAPL",200.0,&triggered);
+    reportCase("unit","Already-triggered alert not fired again",(triggered==0U),"0",(triggered==0U)?"ok":"re-fired",&fails);
+
+    /* create BELOW alert */
+    r = alertsCreate(&store,"MSFT",50.0,ALERT_BELOW,"admin");
+    reportCase("unit","alertsCreate BELOW=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+
+    triggered = 0U;
+    r = alertsCheckPrice(&store,"MSFT",60.0,&triggered);
+    reportCase("unit","BELOW alert does not fire above threshold",(triggered==0U),"0","ok",&fails);
+
+    triggered = 0U;
+    r = alertsCheckPrice(&store,"MSFT",40.0,&triggered);
+    reportCase("unit","BELOW alert fires at threshold cross",(triggered==1U),"1","ok",&fails);
+
+    /* exact threshold fires (>= and <=) */
+    r = alertsCreate(&store,"TSLA",100.0,ALERT_ABOVE,"u");
+    triggered = 0U;
+    (void)alertsCheckPrice(&store,"TSLA",100.0,&triggered);
+    reportCase("unit","ABOVE fires at exact threshold",(triggered==1U),"1","ok",&fails);
+
+    r = alertsCreate(&store,"AMZN",100.0,ALERT_BELOW,"u");
+    triggered = 0U;
+    (void)alertsCheckPrice(&store,"AMZN",100.0,&triggered);
+    reportCase("unit","BELOW fires at exact threshold",(triggered==1U),"1","ok",&fails);
+
+    /* getAll */
+    r = alertsGetAll(&store,all,MAX_ALERTS,&count);
+    reportCase("unit","alertsGetAll=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+    reportCase("unit","alertsGetAll returns correct count",(count==4U),"4","ok",&fails);
+
+    /* outTriggeredCount NULL is safe */
+    r = alertsCreate(&store,"NVDA",200.0,ALERT_ABOVE,"u");
+    r = alertsCheckPrice(&store,"NVDA",250.0,NULL);
+    reportCase("unit","alertsCheckPrice NULL outCount=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+
+    /* save/load round-trip */
+    {
+        AlertStore store2;
+        size_t cnt2 = 0U;
+        r = alertsSaveToPath(&store,"data/.tester_alerts.db");
+        reportCase("unit","alertsSaveToPath=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+        (void)alertsInit(&store2);
+        r = alertsLoadFromPath(&store2,"data/.tester_alerts.db");
+        reportCase("unit","alertsLoadFromPath=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+        (void)alertsGetAll(&store2,all,MAX_ALERTS,&cnt2);
+        reportCase("unit","Alerts reload same count",(cnt2==count+1U),"5","ok",&fails);
+        (void)alertsDestroy(&store2);
+        (void)remove("data/.tester_alerts.db");
+    }
+
+    /* bad paths */
+    r = alertsSaveToPath(&store,"/no/such/path/a.db");
+    reportCase("unit","alertsSaveToPath bad path=>IO_ERROR",(r==STATUS_ERR_IO),"IO_ERROR",status_to_string(r),&fails);
+    r = alertsLoadFromPath(&store,"/no/such/path/a.db");
+    reportCase("unit","alertsLoadFromPath bad path=>IO_ERROR",(r==STATUS_ERR_IO),"IO_ERROR",status_to_string(r),&fails);
+
+    (void)alertsDestroy(&store);
+    r = alertsDestroy(NULL);
+    reportCase("unit","alertsDestroy NULL=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+    return fails;
+}
+
+/* ===================== UNIT TEST 7: Auth ================================ */
+static int unitTest7_Auth(void)
+{
+    int fails = 0;
+    UserStore store;
+    User outUser;
+    status_t r;
+
+    (void)printf("Test 7: Auth Test\n");
+
+    r = authInit(NULL);
+    reportCase("unit","authInit NULL=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+    (void)authInit(&store);
+
+    /* load from scratch file with known users */
+    r = authCreateDefaultUsers("data/.tester_users.txt");
+    reportCase("unit","authCreateDefaultUsers=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+    r = authLoadUsersFromPath(&store,"data/.tester_users.txt");
+    reportCase("unit","authLoadUsersFromPath=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+    reportCase("unit","Users loaded (>0)",(store.count>0U),"true","ok",&fails);
+
+    /* successful login */
+    r = authLogin(&store,"admin","admin123",&outUser);
+    reportCase("unit","authLogin admin=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+    reportCase("unit","authIsAdmin admin=>true",authIsAdmin(&outUser),"true","ok",&fails);
+    reportCase("unit","authIsTester admin=>false",!authIsTester(&outUser),"false","ok",&fails);
+
+    r = authLogin(&store,"tester","tester123",&outUser);
+    reportCase("unit","authLogin tester=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+    reportCase("unit","authIsTester tester=>true",authIsTester(&outUser),"true","ok",&fails);
+    reportCase("unit","authIsAdmin tester=>false",!authIsAdmin(&outUser),"false","ok",&fails);
+
+    r = authLogin(&store,"user","user123",&outUser);
+    reportCase("unit","authLogin user=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+    reportCase("unit","authIsAdmin user=>false",!authIsAdmin(&outUser),"false","ok",&fails);
+
+    /* bad password */
+    r = authLogin(&store,"admin","wrong",&outUser);
+    reportCase("unit","authLogin bad password=>AUTH_FAILED",(r==STATUS_ERR_AUTH),"AUTH_FAILED",status_to_string(r),&fails);
+
+    /* unknown user */
+    r = authLogin(&store,"nobody","pass",&outUser);
+    reportCase("unit","authLogin unknown user=>AUTH_FAILED",(r==STATUS_ERR_AUTH),"AUTH_FAILED",status_to_string(r),&fails);
+
+    /* NULL args */
+    r = authLogin(NULL,"admin","admin123",&outUser);
+    reportCase("unit","authLogin NULL store=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+    r = authLogin(&store,NULL,"admin123",&outUser);
+    reportCase("unit","authLogin NULL user=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+
+    /* authIsAdmin/IsTester NULL */
+    reportCase("unit","authIsAdmin NULL=>false",!authIsAdmin(NULL),"false","ok",&fails);
+    reportCase("unit","authIsTester NULL=>false",!authIsTester(NULL),"false","ok",&fails);
+
+    /* bad path */
+    r = authLoadUsersFromPath(NULL,"data/.tester_users.txt");
+    reportCase("unit","authLoadUsersFromPath NULL store=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+
+    (void)remove("data/.tester_users.txt");
+    return fails;
+}
+
+/* ===================== UNIT TEST 8: Common helpers ====================== */
+static int unitTest8_CommonHelpers(void)
+{
+    int fails = 0;
+    char buf[16];
+    status_t r;
+
+    (void)printf("Test 8: Common Helpers Test\n");
+
+    /* safe_strcpy normal */
+    r = safe_strcpy(buf,sizeof(buf),"Hello");
+    reportCase("unit","safe_strcpy normal=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+    reportCase("unit","safe_strcpy copies correctly",(buf[0]=='H'),"H","ok",&fails);
+
+    /* safe_strcpy NULL dst */
+    r = safe_strcpy(NULL,sizeof(buf),"Hello");
+    reportCase("unit","safe_strcpy NULL dst=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+
+    /* safe_strcpy NULL src */
+    r = safe_strcpy(buf,sizeof(buf),NULL);
+    reportCase("unit","safe_strcpy NULL src=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+
+    /* safe_strcpy zero dstSize */
+    r = safe_strcpy(buf,0U,"Hello");
+    reportCase("unit","safe_strcpy dstSize==0=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+
+    /* truncation: src longer than dst */
+    r = safe_strcpy(buf,4U,"Hello");
+    reportCase("unit","safe_strcpy truncates and NUL-terminates",(r==STATUS_OK)&&(buf[3]=='\0'),"NUL at [3]","ok",&fails);
+
+    /* safe_strcasecmp equal strings */
+    reportCase("unit","safe_strcasecmp equal=>0",(safe_strcasecmp("AAPL","aapl")==0),"0","ok",&fails);
+    reportCase("unit","safe_strcasecmp different<0",(safe_strcasecmp("AAPL","MSFT")!=0),"nonzero","ok",&fails);
+    reportCase("unit","safe_strcasecmp NULL,NULL=>0",(safe_strcasecmp(NULL,NULL)==0),"0","ok",&fails);
+    reportCase("unit","safe_strcasecmp NULL,str!=0",(safe_strcasecmp(NULL,"X")!=0),"nonzero","ok",&fails);
+
+    /* portable_strnlen */
+    reportCase("unit","portable_strnlen normal",(portable_strnlen("Hello",10)==5U),"5","ok",&fails);
+    reportCase("unit","portable_strnlen NULL=>0",(portable_strnlen(NULL,10)==0U),"0","ok",&fails);
+    reportCase("unit","portable_strnlen maxLen cap",(portable_strnlen("Hello",3)==3U),"3","ok",&fails);
+    reportCase("unit","portable_strnlen empty=>0",(portable_strnlen("",10)==0U),"0","ok",&fails);
+
+    /* status_to_string coverage */
+    reportCase("unit","status_to_string OK",(status_to_string(STATUS_OK)!=NULL),"non-null","ok",&fails);
+    reportCase("unit","status_to_string NOT_FOUND",(status_to_string(STATUS_ERR_NOT_FOUND)!=NULL),"non-null","ok",&fails);
+    reportCase("unit","status_to_string DUPLICATE",(status_to_string(STATUS_ERR_DUPLICATE)!=NULL),"non-null","ok",&fails);
+    reportCase("unit","status_to_string MEMORY",(status_to_string(STATUS_ERR_MEMORY)!=NULL),"non-null","ok",&fails);
+    reportCase("unit","status_to_string AUTH",(status_to_string(STATUS_ERR_AUTH)!=NULL),"non-null","ok",&fails);
+    reportCase("unit","status_to_string PERMISSION",(status_to_string(STATUS_ERR_PERMISSION)!=NULL),"non-null","ok",&fails);
+    reportCase("unit","status_to_string LOCK",(status_to_string(STATUS_ERR_LOCK)!=NULL),"non-null","ok",&fails);
+    reportCase("unit","status_to_string FULL",(status_to_string(STATUS_ERR_FULL)!=NULL),"non-null","ok",&fails);
+    reportCase("unit","status_to_string IO",(status_to_string(STATUS_ERR_IO)!=NULL),"non-null","ok",&fails);
+
+    /* location_status_to_string */
+    reportCase("unit","loc_to_str NONE",(location_status_to_string(LOC_NONE)!=NULL),"non-null","ok",&fails);
+    reportCase("unit","loc_to_str MAIN_ONLY",(location_status_to_string(LOC_MAIN_ONLY)!=NULL),"non-null","ok",&fails);
+    reportCase("unit","loc_to_str CACHE_ONLY",(location_status_to_string(LOC_CACHE_ONLY)!=NULL),"non-null","ok",&fails);
+    reportCase("unit","loc_to_str BOTH",(location_status_to_string(LOC_BOTH)!=NULL),"non-null","ok",&fails);
+
+    return fails;
+}
+
+/* ===================== UNIT TEST 9: Query =============================== */
+static int unitTest9_Query(void)
+{
+    int fails = 0;
+    MainCache mc;
+    SearchCache sc;
+    Stats stats;
+    Stock outStock;
+    location_status_t loc;
+    status_t r;
+
+    (void)printf("Test 9: Query Test\n");
+
+    (void)mainCacheInit(&mc);
+    (void)searchCacheInit(&sc);
+    (void)statsInit(&stats);
+
+    /* add a stock to main only */
+    {
+        Stock st;
+        memset(&st,0,sizeof(st));
+        (void)safe_strcpy(st.symbol,sizeof(st.symbol),"QRYA");
+        (void)safe_strcpy(st.name,sizeof(st.name),"Query A");
+        st.price = 55.0;
+        (void)mainCacheAdd(&mc,&st);
+    }
+
+    /* queryLocationStatus: LOC_MAIN_ONLY */
+    loc = queryLocationStatus(&mc,&sc,"QRYA");
+    reportCase("unit","queryLocationStatus MAIN_ONLY",(loc==LOC_MAIN_ONLY),"MAIN_ONLY",location_status_to_string(loc),&fails);
+
+    /* queryLocationStatus: LOC_NONE */
+    loc = queryLocationStatus(&mc,&sc,"UNKN");
+    reportCase("unit","queryLocationStatus NONE",(loc==LOC_NONE),"NONE",location_status_to_string(loc),&fails);
+
+    /* queryExecuteSearch NULL arg */
+    r = queryExecuteSearch(NULL,&sc,&stats,"QRYA",&outStock,&loc);
+    reportCase("unit","queryExecuteSearch NULL mainDb=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+
+    /* queryExecuteSearch invalid symbol */
+    r = queryExecuteSearch(&mc,&sc,&stats,"@BAD",&outStock,&loc);
+    reportCase("unit","queryExecuteSearch bad symbol=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+
+    /* queryExecuteSearch not found */
+    r = queryExecuteSearch(&mc,&sc,&stats,"XXXX",&outStock,&loc);
+    reportCase("unit","queryExecuteSearch not found=>NOT_FOUND",(r==STATUS_ERR_NOT_FOUND),"NOT_FOUND",status_to_string(r),&fails);
+    reportCase("unit","queryExecuteSearch not found loc==NONE",(loc==LOC_NONE),"NONE",location_status_to_string(loc),&fails);
+
+    /* queryExecuteSearch main-DB hit (cache miss) */
+    r = queryExecuteSearch(&mc,&sc,&stats,"QRYA",&outStock,&loc);
+    reportCase("unit","queryExecuteSearch main-DB hit=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+    reportCase("unit","queryExecuteSearch loc==MAIN_ONLY",(loc==LOC_MAIN_ONLY),"MAIN_ONLY",location_status_to_string(loc),&fails);
+    reportCase("unit","queryExecuteSearch now in search cache",searchCacheContains(&sc,"QRYA"),"true","ok",&fails);
+
+    /* queryLocationStatus: LOC_BOTH after search populates cache */
+    loc = queryLocationStatus(&mc,&sc,"QRYA");
+    reportCase("unit","queryLocationStatus BOTH after search",(loc==LOC_BOTH),"BOTH",location_status_to_string(loc),&fails);
+
+    /* second search = cache HIT */
+    r = queryExecuteSearch(&mc,&sc,&stats,"QRYA",&outStock,&loc);
+    reportCase("unit","queryExecuteSearch cache HIT=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+    reportCase("unit","cache HIT loc==BOTH",(loc==LOC_BOTH),"BOTH",location_status_to_string(loc),&fails);
+
+    /* outLocation NULL is safe */
+    r = queryExecuteSearch(&mc,&sc,&stats,"QRYA",&outStock,NULL);
+    reportCase("unit","queryExecuteSearch NULL loc=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+
+    (void)statsDestroy(&stats);
+    (void)searchCacheDestroy(&sc);
+    (void)mainCacheDestroy(&mc);
+    return fails;
+}
+
+/* ===================== UNIT TEST 10: Feed =============================== */
+static int unitTest10_Feed(void)
+{
+    int fails = 0;
+    MainCache mc;
+    SearchCache sc;
+    AlertStore alerts;
+    Stats stats;
+    status_t r;
+
+    (void)printf("Test 10: Feed Test\n");
+
+    (void)mainCacheInit(&mc);
+    (void)searchCacheInit(&sc);
+    (void)alertsInit(&alerts);
+    (void)statsInit(&stats);
+
+    /* NULL arg guards */
+    r = feedApplyPriceUpdate(NULL,&sc,&alerts,&stats,"AAPL",100.0);
+    reportCase("unit","feedApply NULL mainDb=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+    r = feedApplyPriceUpdate(&mc,NULL,&alerts,&stats,"AAPL",100.0);
+    reportCase("unit","feedApply NULL searchDb=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+    r = feedApplyPriceUpdate(&mc,&sc,NULL,&stats,"AAPL",100.0);
+    reportCase("unit","feedApply NULL alerts=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+    r = feedApplyPriceUpdate(&mc,&sc,&alerts,NULL,"AAPL",100.0);
+    reportCase("unit","feedApply NULL stats=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+    r = feedApplyPriceUpdate(&mc,&sc,&alerts,&stats,NULL,100.0);
+    reportCase("unit","feedApply NULL symbol=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+
+    /* invalid symbol format */
+    r = feedApplyPriceUpdate(&mc,&sc,&alerts,&stats,"@BAD",100.0);
+    reportCase("unit","feedApply bad symbol=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+
+    /* invalid price */
+    r = feedApplyPriceUpdate(&mc,&sc,&alerts,&stats,"AAPL",-5.0);
+    reportCase("unit","feedApply negative price=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+
+    /* symbol not in main DB => NOT_FOUND */
+    r = feedApplyPriceUpdate(&mc,&sc,&alerts,&stats,"AAPL",100.0);
+    reportCase("unit","feedApply unknown symbol=>NOT_FOUND",(r==STATUS_ERR_NOT_FOUND),"NOT_FOUND",status_to_string(r),&fails);
+
+    /* add stock and update successfully */
+    {
+        Stock st;
+        memset(&st,0,sizeof(st));
+        (void)safe_strcpy(st.symbol,sizeof(st.symbol),"FEED");
+        (void)safe_strcpy(st.name,sizeof(st.name),"Feed Test Co");
+        st.price = 100.0;
+        (void)mainCacheAdd(&mc,&st);
+    }
+    r = feedApplyPriceUpdate(&mc,&sc,&alerts,&stats,"FEED",120.0);
+    reportCase("unit","feedApply valid update=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+    {
+        Stock found;
+        (void)mainCacheSearch(&mc,"FEED",&found);
+        reportCase("unit","feedApply price reflected in mainDb",(found.price==120.0),"120.0",(found.price==120.0)?"ok":"mismatch",&fails);
+    }
+
+    /* update when symbol is also in search cache (sync rule) */
+    (void)searchCacheContains(&sc,"FEED"); /* put it in cache first */
+    {
+        Stock touchSt;
+        memset(&touchSt,0,sizeof(touchSt));
+        (void)safe_strcpy(touchSt.symbol,sizeof(touchSt.symbol),"FEED");
+        (void)safe_strcpy(touchSt.name,sizeof(touchSt.name),"Feed Test Co");
+        touchSt.price = 120.0;
+        (void)searchCacheTouch(&sc,&touchSt);
+    }
+    r = feedApplyPriceUpdate(&mc,&sc,&alerts,&stats,"FEED",150.0);
+    reportCase("unit","feedApply sync rule=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+    {
+        Stock found;
+        (void)searchCacheSearch(&sc,"FEED",&found);
+        reportCase("unit","feedApply synced search cache price",(found.price==150.0),"150.0",(found.price==150.0)?"ok":"mismatch",&fails);
+    }
+
+    /* feedSimulateTick NULL guards */
+    {
+        char sym[SYMBOL_MAX_LEN]; double p;
+        r = feedSimulateTick(NULL,&sc,&alerts,&stats,sym,sizeof(sym),&p);
+        reportCase("unit","feedSimulateTick NULL mainDb=>INVALID_ARG",(r==STATUS_ERR_INVALID_ARG),"INVALID_ARG",status_to_string(r),&fails);
+    }
+
+    /* feedSimulateTick on non-empty DB */
+    {
+        char sym[SYMBOL_MAX_LEN]; double p = 0.0;
+        r = feedSimulateTick(&mc,&sc,&alerts,&stats,sym,sizeof(sym),&p);
+        reportCase("unit","feedSimulateTick=>OK",(r==STATUS_OK),"OK",status_to_string(r),&fails);
+        reportCase("unit","feedSimulateTick returned positive price",(p>0.0),"positive","ok",&fails);
+    }
+
+    /* feedSimulateTick on empty DB => NOT_FOUND */
+    {
+        MainCache emptyMc; char sym[SYMBOL_MAX_LEN]; double p;
+        (void)mainCacheInit(&emptyMc);
+        r = feedSimulateTick(&emptyMc,&sc,&alerts,&stats,sym,sizeof(sym),&p);
+        reportCase("unit","feedSimulateTick empty DB=>NOT_FOUND",(r==STATUS_ERR_NOT_FOUND),"NOT_FOUND",status_to_string(r),&fails);
+        (void)mainCacheDestroy(&emptyMc);
     }
 
     (void)statsDestroy(&stats);
+    (void)alertsDestroy(&alerts);
+    (void)searchCacheDestroy(&sc);
+    (void)mainCacheDestroy(&mc);
     return fails;
 }
 
@@ -249,9 +950,15 @@ int testerRunUnitTests(void)
     totalFails += unitTest3_SearchCacheLRU();
     totalFails += unitTest4_Persistence();
     totalFails += unitTest5_Statistics();
+    totalFails += unitTest6_Alerts();
+    totalFails += unitTest7_Auth();
+    totalFails += unitTest8_CommonHelpers();
+    totalFails += unitTest9_Query();
+    totalFails += unitTest10_Feed();
     (void)printf("Unit testing complete: %d failing check(s)\n", totalFails);
     return totalFails;
 }
+
 
 /* ===================== 2. INTEGRATION TESTING =========================== */
 

@@ -1,0 +1,8 @@
+[2026-08-11 20:54:49] Rejected invalid symbol in search: '@BAD'
+[2026-08-11 20:54:49] Rejected invalid feed update symbol=@BAD price=100.0000
+[2026-08-11 20:54:49] Rejected invalid feed update symbol=AAPL price=-5.0000
+[2026-08-11 20:54:49] Price update failed for unknown symbol=AAPL
+[2026-08-11 20:54:57] Rejected invalid symbol in search: '@BAD'
+[2026-08-11 20:54:57] Rejected invalid feed update symbol=@BAD price=100.0000
+[2026-08-11 20:54:57] Rejected invalid feed update symbol=AAPL price=-5.0000
+[2026-08-11 20:54:57] Price update failed for unknown symbol=AAPL

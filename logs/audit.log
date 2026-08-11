@@ -288,3 +288,98 @@
 [2026-08-11 20:43:13] HEARTBEAT logger thread alive
 [2026-08-11 20:43:23] HEARTBEAT logger thread alive
 [2026-08-11 20:43:33] HEARTBEAT logger thread alive
+[2026-08-11 20:43:43] HEARTBEAT logger thread alive
+[2026-08-11 20:43:53] HEARTBEAT logger thread alive
+[2026-08-11 20:44:03] HEARTBEAT logger thread alive
+[2026-08-11 20:44:13] HEARTBEAT logger thread alive
+[2026-08-11 20:44:23] HEARTBEAT logger thread alive
+[2026-08-11 20:44:33] HEARTBEAT logger thread alive
+[2026-08-11 20:44:43] HEARTBEAT logger thread alive
+[2026-08-11 20:44:53] HEARTBEAT logger thread alive
+[2026-08-11 20:45:03] HEARTBEAT logger thread alive
+[2026-08-11 20:45:13] HEARTBEAT logger thread alive
+[2026-08-11 20:45:23] HEARTBEAT logger thread alive
+[2026-08-11 20:45:33] HEARTBEAT logger thread alive
+[2026-08-11 20:45:43] HEARTBEAT logger thread alive
+[2026-08-11 20:45:53] HEARTBEAT logger thread alive
+[2026-08-11 20:46:03] HEARTBEAT logger thread alive
+[2026-08-11 20:46:13] HEARTBEAT logger thread alive
+[2026-08-11 20:46:23] HEARTBEAT logger thread alive
+[2026-08-11 20:46:33] HEARTBEAT logger thread alive
+[2026-08-11 20:46:43] HEARTBEAT logger thread alive
+[2026-08-11 20:46:53] HEARTBEAT logger thread alive
+[2026-08-11 20:47:03] HEARTBEAT logger thread alive
+[2026-08-11 20:47:13] HEARTBEAT logger thread alive
+[2026-08-11 20:47:23] HEARTBEAT logger thread alive
+[2026-08-11 20:47:33] HEARTBEAT logger thread alive
+[2026-08-11 20:47:43] HEARTBEAT logger thread alive
+[2026-08-11 20:47:53] HEARTBEAT logger thread alive
+[2026-08-11 20:48:03] HEARTBEAT logger thread alive
+[2026-08-11 20:48:13] HEARTBEAT logger thread alive
+[2026-08-11 20:48:24] HEARTBEAT logger thread alive
+[2026-08-11 20:48:34] HEARTBEAT logger thread alive
+[2026-08-11 20:48:44] HEARTBEAT logger thread alive
+[2026-08-11 20:48:54] HEARTBEAT logger thread alive
+[2026-08-11 20:49:04] HEARTBEAT logger thread alive
+[2026-08-11 20:49:14] HEARTBEAT logger thread alive
+[2026-08-11 20:49:24] HEARTBEAT logger thread alive
+[2026-08-11 20:49:34] HEARTBEAT logger thread alive
+[2026-08-11 20:49:44] HEARTBEAT logger thread alive
+[2026-08-11 20:49:54] HEARTBEAT logger thread alive
+[2026-08-11 20:50:04] HEARTBEAT logger thread alive
+[2026-08-11 20:50:14] HEARTBEAT logger thread alive
+[2026-08-11 20:50:24] HEARTBEAT logger thread alive
+[2026-08-11 20:50:34] HEARTBEAT logger thread alive
+[2026-08-11 20:50:44] HEARTBEAT logger thread alive
+[2026-08-11 20:50:54] HEARTBEAT logger thread alive
+[2026-08-11 20:51:04] HEARTBEAT logger thread alive
+[2026-08-11 20:51:14] HEARTBEAT logger thread alive
+[2026-08-11 20:51:24] HEARTBEAT logger thread alive
+[2026-08-11 20:51:34] HEARTBEAT logger thread alive
+[2026-08-11 20:51:44] HEARTBEAT logger thread alive
+[2026-08-11 20:51:54] HEARTBEAT logger thread alive
+[2026-08-11 20:52:04] HEARTBEAT logger thread alive
+[2026-08-11 20:52:14] HEARTBEAT logger thread alive
+[2026-08-11 20:52:24] HEARTBEAT logger thread alive
+[2026-08-11 20:52:34] HEARTBEAT logger thread alive
+[2026-08-11 20:52:44] HEARTBEAT logger thread alive
+[2026-08-11 20:52:54] HEARTBEAT logger thread alive
+[2026-08-11 20:53:04] HEARTBEAT logger thread alive
+[2026-08-11 20:53:14] HEARTBEAT logger thread alive
+[2026-08-11 20:53:24] HEARTBEAT logger thread alive
+[2026-08-11 20:54:13] Loaded main DB from data/stock.db (100 stocks)
+[2026-08-11 20:54:13] Background threads started (feed/logger/stats)
+[2026-08-11 20:54:18] LOGIN SUCCESS user=admin role=ADMIN
+[2026-08-11 20:54:18] Background threads stopped cleanly
+[2026-08-11 20:54:18] Loaded per-user cache (2 entries) and alerts (0) for admin
+[2026-08-11 20:54:18] Background threads started (feed/logger/stats)
+[2026-08-11 20:54:21] Saved per-user cache and alerts for admin
+[2026-08-11 20:54:26] LOGIN SUCCESS user=user role=USER
+[2026-08-11 20:54:26] Background threads stopped cleanly
+[2026-08-11 20:54:26] Loaded per-user cache (1 entries) and alerts (0) for user
+[2026-08-11 20:54:26] Background threads started (feed/logger/stats)
+[2026-08-11 20:54:28] Saved per-user cache and alerts for user
+[2026-08-11 20:54:33] LOGIN FAILED user=test
+[2026-08-11 20:54:36] HEARTBEAT logger thread alive
+[2026-08-11 20:54:40] LOGIN SUCCESS user=tester role=TESTER
+[2026-08-11 20:54:40] Background threads stopped cleanly
+[2026-08-11 20:54:40] Loaded per-user cache (0 entries) and alerts (0) for tester
+[2026-08-11 20:54:40] Background threads started (feed/logger/stats)
+[2026-08-11 20:54:49] LOGIN SUCCESS user=admin role=ADMIN
+[2026-08-11 20:54:49] LOGIN SUCCESS user=tester role=TESTER
+[2026-08-11 20:54:49] LOGIN SUCCESS user=user role=USER
+[2026-08-11 20:54:49] LOGIN FAILED user=admin
+[2026-08-11 20:54:49] LOGIN FAILED user=nobody
+[2026-08-11 20:54:50] HEARTBEAT logger thread alive
+[2026-08-11 20:54:57] LOGIN SUCCESS user=admin role=ADMIN
+[2026-08-11 20:54:57] LOGIN SUCCESS user=tester role=TESTER
+[2026-08-11 20:54:57] LOGIN SUCCESS user=user role=USER
+[2026-08-11 20:54:57] LOGIN FAILED user=admin
+[2026-08-11 20:54:57] LOGIN FAILED user=nobody
+[2026-08-11 20:55:00] HEARTBEAT logger thread alive
+[2026-08-11 20:55:10] HEARTBEAT logger thread alive
+[2026-08-11 20:55:20] HEARTBEAT logger thread alive
+[2026-08-11 20:55:21] Saved per-user cache and alerts for tester
+[2026-08-11 20:55:21] Background threads stopped cleanly
+[2026-08-11 20:55:21] Saved per-user cache and alerts for tester
+[2026-08-11 20:55:21] All databases saved to disk
