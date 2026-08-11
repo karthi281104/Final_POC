@@ -383,3 +383,45 @@
 [2026-08-11 20:55:21] Background threads stopped cleanly
 [2026-08-11 20:55:21] Saved per-user cache and alerts for tester
 [2026-08-11 20:55:21] All databases saved to disk
+[2026-08-11 21:14:21] Loaded main DB from data/stock.db (100 stocks)
+[2026-08-11 21:14:21] Background threads started (feed/logger/stats)
+[2026-08-11 21:14:21] LOGIN FAILED user=
+[2026-08-11 21:14:21] Background threads stopped cleanly
+[2026-08-11 21:14:21] All databases saved to disk
+[2026-08-11 21:19:22] Loaded main DB from data/stock.db (100 stocks)
+[2026-08-11 21:19:22] Background threads started (feed/logger/stats)
+[2026-08-11 21:19:26] LOGIN FAILED user=user
+[2026-08-11 21:19:26] Background threads stopped cleanly
+[2026-08-11 21:19:26] All databases saved to disk
+[2026-08-11 21:19:28] Loaded main DB from data/stock.db (100 stocks)
+[2026-08-11 21:19:28] Background threads started (feed/logger/stats)
+[2026-08-11 21:19:36] LOGIN SUCCESS user=user role=USER
+[2026-08-11 21:19:36] Background threads stopped cleanly
+[2026-08-11 21:19:36] Loaded per-user cache (1 entries) and alerts (0) for user
+[2026-08-11 21:19:36] Background threads started (feed/logger/stats)
+[2026-08-11 21:19:46] HEARTBEAT logger thread alive
+[2026-08-11 21:19:56] HEARTBEAT logger thread alive
+[2026-08-11 21:20:06] HEARTBEAT logger thread alive
+[2026-08-11 21:20:16] HEARTBEAT logger thread alive
+[2026-08-11 21:20:26] HEARTBEAT logger thread alive
+[2026-08-11 21:20:36] HEARTBEAT logger thread alive
+[2026-08-11 21:20:46] HEARTBEAT logger thread alive
+[2026-08-11 21:20:56] HEARTBEAT logger thread alive
+[2026-08-11 21:21:06] HEARTBEAT logger thread alive
+[2026-08-11 21:21:16] HEARTBEAT logger thread alive
+[2026-08-11 21:21:27] HEARTBEAT logger thread alive
+[2026-08-11 21:21:37] HEARTBEAT logger thread alive
+[2026-08-11 21:21:47] HEARTBEAT logger thread alive
+[2026-08-11 21:21:57] HEARTBEAT logger thread alive
+[2026-08-11 21:22:07] HEARTBEAT logger thread alive
+[2026-08-11 21:22:17] HEARTBEAT logger thread alive
+[2026-08-11 21:22:27] HEARTBEAT logger thread alive
+[2026-08-11 21:22:37] HEARTBEAT logger thread alive
+[2026-08-11 21:22:47] HEARTBEAT logger thread alive
+[2026-08-11 21:22:57] HEARTBEAT logger thread alive
+[2026-08-11 21:23:07] HEARTBEAT logger thread alive
+[2026-08-11 21:23:17] HEARTBEAT logger thread alive
+[2026-08-11 21:23:27] HEARTBEAT logger thread alive
+[2026-08-11 21:23:37] HEARTBEAT logger thread alive
+[2026-08-11 21:23:47] HEARTBEAT logger thread alive
+[2026-08-11 21:23:57] HEARTBEAT logger thread alive
